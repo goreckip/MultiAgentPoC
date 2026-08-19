@@ -20,7 +20,11 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
 4. **Subagenci per kategoria procesu**, koordynowani przez agenta-router (LangGraph).
 5. **Walidacja danych wejściowych** — dane wrażliwe, format numeru zamówienia,
    uprawnienia do kategorii pytań.
-6. **Observability** — Langfuse (self-hosted, Docker).
+6. **Human-in-the-loop** — pytania eskalowane (niska pewność / kategoria `inne`) trafiają
+   do kolejki zatwierdzeń; człowiek odpowiada albo zatwierdza/edytuje odpowiedź z RAG
+   zanim pójdzie do użytkownika. Zaimplementowane przez `interrupt()` + checkpointer
+   w LangGraph — graf zatrzymuje się na węźle i czeka na input człowieka.
+7. **Observability** — Langfuse Cloud (free tier), zamiast self-hosted Dockera.
 
 ## Struktura repo
 
@@ -34,16 +38,18 @@ src/multiagent_poc/
   config.py          — konfiguracja (Ollama/Chroma/Langfuse)
   rag/                — chunking, indeksacja, retrieval
   agents/             — subagenci per kategoria
-  graph/              — graf LangGraph (routing, confidence gate)
+  graph/              — graf LangGraph (routing, confidence gate, HITL interrupt)
   validation/         — walidacja danych wejściowych
+  hitl/               — kolejka zatwierdzeń, integracja z Streamlit UI
 tests/
 data/chroma/          — lokalny wektorowy store (gitignored)
 ```
 
 ## Stack
 
-LangGraph + LangChain, Ollama (Llama 3.1 8B, lokalnie), Chroma, Langfuse (self-hosted),
-Streamlit (UI, opcjonalnie). Wszystko darmowe / lokalne.
+LangGraph + LangChain, Ollama (Llama 3.1 8B, lokalnie), Chroma, Langfuse Cloud (free tier),
+Streamlit (UI, opcjonalnie — także jako panel HITL do zatwierdzania eskalacji).
+Wszystko darmowe.
 
 ## Status
 
