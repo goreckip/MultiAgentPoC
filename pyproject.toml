@@ -13,6 +13,7 @@ dependencies = [
     "streamlit>=1.38",
     "langfuse>=2.50",
     "python-dotenv>=1.0",
+    "pypdf>=5.0",
 ]
 
 [project.optional-dependencies]

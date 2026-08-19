@@ -45,6 +45,10 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Confidence gate | [`src/multiagent_poc/classification/gate.py`](../src/multiagent_poc/classification/gate.py) | Powyżej progu (`config.confidence_threshold`) → auto-routing na wykrytą intencję; poniżej → efektywna intencja `inne` + eskalacja. |
 | Zbiór ewaluacyjny | [`src/multiagent_poc/classification/eval_set.py`](../src/multiagent_poc/classification/eval_set.py) | Strukturalna kopia `docs/test_questions.md` do automatycznych testów klasyfikatora. |
 | Eksperyment porównawczy (klasyfikator) | [`scripts/evaluate_classifier.py`](../scripts/evaluate_classifier.py) | Uruchamia klasyfikator + gate na całym zbiorze ewaluacyjnym, raportuje trafność i każdą pomyłkę. |
+| Skan antywirusowy załącznika | [`src/multiagent_poc/validation/attachment_scan.py`](../src/multiagent_poc/validation/attachment_scan.py) | Wywołuje lokalny `clamscan.exe` (ClamAV), blokujące i bezwarunkowe przed jakimkolwiek parsowaniem. |
+| Parser PDF | [`src/multiagent_poc/validation/attachment.py`](../src/multiagent_poc/validation/attachment.py) | Ekstrakcja tekstu (pypdf), tylko warstwa tekstowa, bez OCR. |
+| Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik: reklasyfikacja z treścią PDF tylko gdy pytanie samo w sobie miało zbyt niską pewność. Zastępczo za graf LangGraph do czasu Tygodnia 4/2. |
+| Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
 
 **Zweryfikowane działanie:** `pytest` (4/4 testy), realna indeksacja do Chroma i
 realny retrieval przez Ollama (`llama3.1:8b` + `nomic-embed-text`) — patrz wpis

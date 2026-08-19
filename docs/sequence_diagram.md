@@ -19,12 +19,26 @@ sequenceDiagram
     participant RAG as RAG (retrieval)
     participant Chroma as Chroma (vector DB)
     participant LLM as Ollama (LLM)
+    participant AV as Skan antywirusowy
+    participant Doc as Parser załącznika (PDF)
     participant HITL as Kolejka HITL
     actor Human as Człowiek (operator/kierownik)
     participant LF as Langfuse (observability)
 
-    User->>UI: Zadaje pytanie
-    UI->>Graph: invoke(pytanie)
+    User->>UI: Zadaje pytanie (opcjonalnie: załącza PDF, np. zamówienie)
+    UI->>Graph: invoke(pytanie, załącznik?)
+
+    opt załącznik obecny
+        Graph->>AV: scan(załącznik)
+        alt wykryto malware / plik podejrzany
+            AV-->>Graph: reject
+            Graph->>LF: log: attachment_rejected
+            Graph-->>UI: Odpowiedź: "załącznik odrzucony"
+            UI-->>User: Wyświetla odmowę
+        else plik czysty
+            AV-->>Graph: ok
+        end
+    end
     Graph->>LF: log: trace start
 
     Graph->>Val: validate(pytanie)
@@ -56,15 +70,30 @@ sequenceDiagram
             Graph-->>UI: odpowiedź + źródła (runbook, sekcja)
             UI-->>User: Wyświetla odpowiedź
         else confidence < próg OR intencja == "inne"
-            Gate-->>Graph: escalate
-            Graph->>HITL: enqueue(pytanie, kontekst_częściowy)
-            Graph->>Graph: interrupt() — graf wstrzymany, stan zapisany (checkpointer)
-            HITL->>Human: powiadomienie o pytaniu w kolejce
-            Human->>HITL: odpowiedź / zatwierdzenie / edycja
-            HITL->>Graph: resume(odpowiedź_człowieka)
-            Graph->>LF: log: human_escalation (czas oczekiwania, kto odpowiedział)
-            Graph-->>UI: odpowiedź (od człowieka)
-            UI-->>User: Wyświetla odpowiedź
+            Gate-->>Graph: escalate (wstępnie)
+
+            opt załącznik obecny i przeszedł skan
+                Graph->>Doc: parse(załącznik) — tylko warstwa tekstowa PDF, bez OCR
+                Doc-->>Graph: tekst_dokumentu
+                Graph->>Clf: classify(pytanie + tekst_dokumentu)
+                Clf-->>Graph: (intencja', confidence')
+                Graph->>Gate: check(confidence', intencja')
+            end
+
+            alt confidence (po ew. doczytaniu załącznika) >= próg
+                Gate-->>Graph: auto-handle
+                Note over Graph,Agent: dalej jak w gałęzi "auto-handle" powyżej
+            else nadal poniżej progu
+                Gate-->>Graph: escalate
+                Graph->>HITL: enqueue(pytanie, kontekst_częściowy, załącznik?)
+                Graph->>Graph: interrupt() — graf wstrzymany, stan zapisany (checkpointer)
+                HITL->>Human: powiadomienie o pytaniu w kolejce
+                Human->>HITL: odpowiedź / zatwierdzenie / edycja
+                HITL->>Graph: resume(odpowiedź_człowieka)
+                Graph->>LF: log: human_escalation (czas oczekiwania, kto odpowiedział)
+                Graph-->>UI: odpowiedź (od człowieka)
+                UI-->>User: Wyświetla odpowiedź
+            end
         end
     end
 
@@ -88,3 +117,10 @@ sequenceDiagram
 - Diagram nie pokazuje pętli powtórnego pytania przy niejednoznacznej
   intencji (dopytanie zamiast eskalacji) — do rozstrzygnięcia w Tygodniu 3
   razem z implementacją confidence gate.
+- **Skan antywirusowy jest blokujący i bezwarunkowy** — żaden załącznik nie
+  trafia do parsera PDF, klasyfikatora ani logów Langfuse przed pozytywnym
+  wynikiem skanu. To rozszerzenie dodane po podstawowym planie — patrz
+  `decision_log.md` ("Rozszerzenie planu") i punkty 5.5-5.8 w
+  `requirements.md`. Docelowy agent "data retrieval" (wykorzystujący treść
+  załącznika bezpośrednio w odpowiedzi, nie tylko do reklasyfikacji) to
+  świadomy follow-up, nieujęty jeszcze na tym diagramie.

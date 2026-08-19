@@ -174,6 +174,79 @@ etapie, surowy materiał pod przyszłe STAR.
   przykładów na kategorię, ewentualnie LLM-classifier jako alternatywa do
   porównania (temat na Tydzień 5-6, przy okazji porównania modeli).
 
+## Rozszerzenie planu — 2026-08-19
+
+- **Decyzja:** dodanie możliwości załączenia pliku PDF (np. zamówienia) jako
+  dodatkowego kontekstu dla klasyfikatora intencji, używanego tylko gdy
+  `confidence < próg` — wchodzi do Warstwy 5 (walidacja) jako punkty 5.5-5.8
+  w `requirements.md`.
+  **Dlaczego:** naturalne rozszerzenie confidence gate — zamiast tylko
+  "eskaluj", trzecia opcja to "sprawdź załącznik, może rozstrzygnie
+  niejednoznaczność". Świadomie ograniczone na start do PDF z warstwą
+  tekstową (bez OCR obrazów) i tylko do trybu "confidence gate ma wątpliwości",
+  żeby nie rozmywać rdzenia Tygodnia 4 (graf, subagenci, walidacja, HITL).
+  **Warunek:** skan antywirusowy załącznika (5.6) jest blokujący dla samej
+  funkcji (5.5) — żaden plik nie trafia do parsowania/embeddingu przed
+  skanem. Wybór narzędzia (lokalny skaner vs. usługa) do rozstrzygnięcia
+  przed implementacją — patrz pytanie do użytkownika w tej samej sesji.
+  **Efekt:** TBD — implementacja zaplanowana na Tydzień 4, razem z resztą
+  warstwy walidacji. Agent "data retrieval" (5.8), który aktywnie
+  wykorzystuje treść załącznika w generowanej odpowiedzi (nie tylko do
+  poprawy klasyfikacji), to świadomy follow-up na Tydzień 5+, żeby nie
+  łączyć dwóch różnych funkcji w jednej iteracji.
+
+## Tydzień 4 (część 1) — załącznik PDF + skan antywirusowy — 2026-08-19
+
+- **Decyzja:** ClamAV lokalnie (portable, `.clamav/`, gitignored), nie
+  VirusTotal API ani uproszczona walidacja typu pliku.
+  **Dlaczego:** zgodne z założeniem "wszystko lokalnie/za darmo" — plik nigdy
+  nie opuszcza maszyny (w przeciwieństwie do VirusTotal), a to prawdziwy skan
+  sygnaturowy, nie tylko sprawdzenie nagłówka MIME. Świadomy wybór użytkownika
+  po przedstawieniu trade-offów (lokalne+wolniejsze vs. chmura+wyciek danych
+  vs. szybkie ale nieprawdziwe).
+  **Efekt:** zainstalowany oficjalny build Windows (GitHub release
+  Cisco-Talos/clamav 1.5.4 — strona clamav.net blokowała scripted download
+  przez Cloudflare), bazy sygnatur pobrane przez `freshclam` (~113MB).
+  Test EICAR (standardowy nieszkodliwy plik testowy AV) został skwarantannowany
+  przez Windows Defender **zanim ClamAV zdążył go zeskanować** — potwierdza,
+  że ochrona antywirusowa na tej maszynie faktycznie działa, ale uniemożliwia
+  bezpośredni test detekcji przez samego ClamAV w tym środowisku. Silnik
+  ClamAV zweryfikowany jako działający na czystych plikach
+  (`test_scan_clean_file_against_real_clamav`); ścieżka detekcji malware
+  przetestowana przez mockowanie `subprocess.run` (kod obsługi exit code 1),
+  nie przez faktyczne wykrycie.
+  **Znane ograniczenie:** `clamscan` przeładowuje całą bazę sygnatur (~113MB)
+  przy każdym wywołaniu — ok. 20-25s na skan. Świadomie zaakceptowane dla PoC
+  (skan nie jest hot-pathem, dzieje się raz na załącznik). `clamd`/`clamdscan`
+  (proces w tle + gniazdo) byłoby szybsze przy realnym obciążeniu — możliwa
+  przyszła optymalizacja, nieuzasadniona na tym etapie.
+
+- **Decyzja:** kolejność w pipeline — skan malware **zawsze i natychmiast**
+  po otrzymaniu załącznika (przed klasyfikacją tekstową), parsowanie treści
+  PDF **tylko** gdy klasyfikacja samego pytania wypadła poniżej progu.
+  **Dlaczego:** fail-fast na bezpieczeństwie (złośliwy plik nigdy nie dotrze
+  nawet do parsera PDF, niezależnie od tego, czy okazałby się potrzebny do
+  klasyfikacji), a parsowanie na żądanie oszczędza pracę, gdy klasyfikator i
+  tak był pewny na podstawie samego pytania.
+  **Efekt:** `classification/pipeline.py::handle_question()` — test
+  `test_rejected_attachment_aborts_before_classification` potwierdza, że
+  odrzucony załącznik przerywa cały przepływ, zanim `classify()` w ogóle
+  zostanie wywołane.
+
+- **Decyzja:** żywa (nie mockowana) weryfikacja end-to-end na przykładzie
+  celowo dobranym z Tygodnia 3 (`scripts/demo_attachment_pipeline.py`).
+  **Efekt (realne liczby):** pytanie "Lodówka z nabiałem pokazuje 8 stopni,
+  co robię z towarem i co robię z lodówką?" bez załącznika: `confidence=0.33`,
+  eskalacja do `inne`. Z załączonym PDF (karta kontroli temperatur, słownictwo
+  zbliżone do runbooka higieny — "termometr", "temperatura", "sanepid"):
+  `confidence=0.67`, poprawnie `higiena`, bez eskalacji. Przy pierwszej
+  próbie treści załącznika (numer zamówienia zamiast słownictwa higieny)
+  reklasyfikacja **nie** poprawiła pewności — uczciwy wynik pokazujący, że
+  funkcja mechanicznie działa (`used_attachment=True`), ale nie gwarantuje
+  rozwiązania niepewności, jeśli treść załącznika słabo pokrywa się z
+  przykładami klasyfikatora (patrz znane ograniczenie klasyfikatora,
+  Tydzień 3).
+
 ## Szablon na kolejne tygodnie
 
 ```

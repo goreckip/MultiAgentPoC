@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 .python/
+.clamav/
 .env
 data/chroma/*
 !data/chroma/.gitkeep

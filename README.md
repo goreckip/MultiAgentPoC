@@ -24,7 +24,9 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
 3. **RAG nad runbookami** — [`docs/runbooks/`](docs/runbooks/), Chroma jako wektorowa baza.
 4. **Subagenci per kategoria procesu**, koordynowani przez agenta-router (LangGraph).
 5. **Walidacja danych wejściowych** — dane wrażliwe, format numeru zamówienia,
-   uprawnienia do kategorii pytań.
+   uprawnienia do kategorii pytań, oraz opcjonalny załącznik PDF (np. zamówienie)
+   jako dodatkowy kontekst, gdy klasyfikacja tekstowa ma zbyt niską pewność —
+   zawsze poprzedzony skanem antywirusowym (ClamAV, lokalnie).
 6. **Human-in-the-loop** — pytania eskalowane (niska pewność / kategoria `inne`) trafiają
    do kolejki zatwierdzeń; człowiek odpowiada albo zatwierdza/edytuje odpowiedź z RAG
    zanim pójdzie do użytkownika. Zaimplementowane przez `interrupt()` + checkpointer
@@ -42,12 +44,14 @@ src/multiagent_poc/
   intents.py         — katalog intencji (źródło prawdy)
   config.py          — konfiguracja (Ollama/Chroma/Langfuse)
   rag/                — chunking, indeksacja, retrieval
+  classification/     — klasyfikator intencji, confidence gate, pipeline z załącznikiem
   agents/             — subagenci per kategoria
   graph/              — graf LangGraph (routing, confidence gate, HITL interrupt)
-  validation/         — walidacja danych wejściowych
+  validation/         — walidacja danych wejściowych, skan AV i parser PDF załącznika
   hitl/               — kolejka zatwierdzeń, integracja z Streamlit UI
 tests/
 data/chroma/          — lokalny wektorowy store (gitignored)
+.clamav/               — lokalny, portable install ClamAV (gitignored, patrz Setup)
 ```
 
 ## Stack
@@ -58,12 +62,13 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 3: RAG i klasyfikacja intencji + confidence gate gotowe i
-zweryfikowane na żywych danych z Ollama (65% trafności top-1, 100% na
-pytaniach bezpieczeństwa — dane wrażliwe, prompt injection, pytania spoza
-katalogu zawsze poprawnie eskalowane). Następny krok: spięcie tego w jeden
-graf LangGraph + subagenci per kategoria (Tydzień 4). Pełny status per
-wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
+Po Tygodniu 4 (część 1): RAG, klasyfikacja intencji + confidence gate oraz
+załącznik PDF (skan AV + reklasyfikacja przy niskiej pewności) gotowe i
+zweryfikowane na żywych danych — patrz realny przykład w
+[`docs/decision_log.md`](docs/decision_log.md) (pytanie o lodówkę: bez
+załącznika eskalacja, z załącznikiem confidence 0.33 → 0.67). Następny krok:
+spięcie wszystkiego w jeden graf LangGraph + subagenci per kategoria + HITL.
+Pełny status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
 
 ## Setup (dev)
 
@@ -79,3 +84,14 @@ pytest
 Uwaga (Windows): jeśli standardowy instalator Pythona (MSI) nie działa w Twoim
 środowisku (np. sandbox blokujący usługę Windows Installer), zadziałał wariant
 embeddable Python + ręczny `get-pip.py` — patrz `docs/decision_log.md`.
+
+**ClamAV (do skanu załączników):** pobierz portable build z
+[GitHub Releases Cisco-Talos/clamav](https://github.com/Cisco-Talos/clamav/releases)
+(`*.win.x64.zip`), rozpakuj do `.clamav/clamav-<wersja>.win.x64/` w katalogu
+projektu, potem zaktualizuj bazy sygnatur:
+```bash
+cd .clamav/clamav-<wersja>.win.x64
+./freshclam.exe --config-file=freshclam.conf   # wymaga freshclam.conf, patrz decision_log.md
+```
+Jeśli Twoja wersja/ścieżka różni się od domyślnej, ustaw `CLAMSCAN_PATH` i
+`CLAMAV_DB_PATH` w `.env`.

@@ -53,6 +53,10 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 5.2 | Walidacja formatu numeru zamówienia (pytania 17, 18) | ⬜ | 4 | Stretch |
 | 5.3 | Sprawdzanie uprawnień do kategorii pytań (pytanie 19) | ⬜ | 4 | Stretch |
 | 5.4 | Odporność na prompt injection (pytanie 20) | ⬜ | 4 | Stretch |
+| 5.5 | Załącznik PDF (np. zamówienie) jako dodatkowy kontekst, gdy `confidence < próg` | ✅ (`classification/pipeline.py`, zweryfikowane na żywo — patrz `decision_log.md`) | 4 | Stretch (dodane po planie bazowym, 2026-08-19) |
+| 5.6 | Skan antywirusowy załącznika przed jakimkolwiek parsowaniem/przekazaniem dalej | ✅ (ClamAV lokalnie, blokujące i bezwarunkowe — `validation/attachment_scan.py`) | 4 | Stretch |
+| 5.7 | Parsowanie treści PDF (tekst → embedding, bez OCR obrazów na start) | ✅ (`validation/attachment.py`, pypdf) | 4 | Stretch |
+| 5.8 | Agent "data retrieval" wykorzystujący treść załącznika w odpowiedzi | ⬜ | 5+ | Stretch — followup po 5.5-5.7, osobny agent w warstwie 4 |
 
 ## Warstwa 6 — Human-in-the-loop
 
