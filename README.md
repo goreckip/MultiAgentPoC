@@ -11,6 +11,11 @@ warstwą walidacji danych wejściowych, której w tamtym projekcie zabrakło.
 
 Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/decision_log.md).
 
+**Dokumentacja:**
+[architektura i stan projektu](docs/architecture.md) ·
+[diagram sekwencji docelowego procesu](docs/sequence_diagram.md) ·
+[lista wymagań ze statusem realizacji](docs/requirements.md)
+
 ## Architektura
 
 1. **Klasyfikacja intencji** — 9 kategorii (8 procesowych + `inne`), patrz
@@ -53,8 +58,10 @@ Wszystko darmowe.
 
 ## Status
 
-Tydzień 1 (szkielet): struktura projektu, katalog intencji, runbooki, pytania testowe.
-Kolejne kroki — patrz `docs/decision_log.md` i TODO w `docs/runbooks/README.md`.
+Po Tygodniu 2: RAG (chunking, indeksacja, retrieval+generacja) gotowe i
+zweryfikowane na żywych danych z Ollama. Klasyfikacja intencji i confidence
+gate — następne w kolejce (Tydzień 3). Pełny status per wymaganie — patrz
+[`docs/requirements.md`](docs/requirements.md).
 
 ## Setup (dev)
 
