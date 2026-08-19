@@ -24,6 +24,34 @@ etapie, surowy materiał pod przyszłe STAR.
   odpowiedź na bazie najbliższego tematycznie dokumentu.
   **Efekt:** do zweryfikowania w Tygodniu 3 na pytaniach 14-20 z `docs/test_questions.md`.
 
+## Tydzień 2 — dokończenie (realny eksperyment) — 2026-08-19
+
+- **Decyzja:** finalnie wybieram `section_chunks` (chunking po `##`/`###`) jako
+  strategię produkcyjną dla RAG, nie fixed-size.
+  **Dlaczego:** uruchomiony realny eksperyment (Ollama + `nomic-embed-text`,
+  `scripts/compare_chunking.py`) na pytaniu z README runbooków ("dostawca przywiózł
+  inny towar niż zamówiony, kierowca już odjechał") potwierdza to na żywych danych:
+  - `fixed_size` (500 znaków, overlap 50): najlepszy wynik (distance 0.4286) trafia
+    właściwą sekcję 4.3, ale **chunk zaczyna się od uciętego słowa "ransporcie..."**
+    (środek zdania z poprzedniej sekcji) i nie ma żadnej informacji o tym, do jakiej
+    sekcji należy — model dostałby fragment bez kontekstu. Wyniki #2 i #3 to
+    kompletnie niepowiązane fragmenty (kasa, BHP).
+  - `section`: najlepszy wynik (distance 0.4090, niższy = lepszy) to **cały,
+    samodzielny akapit sekcji 4.3** z pełną ścieżką nagłówków w treści
+    ("4. Rozbieżności ilościowe i jakościowe > 4.3 Pomyłka dostawcy...") — czytelny
+    i gotowy do wklejenia w prompt bez dodatkowej obróbki.
+  **Efekt:** `COLLECTION_SECTION` (`runbooks_section`) będzie domyślną kolekcją
+  używaną przez warstwę RAG w kolejnych tygodniach; `COLLECTION_FIXED` zostaje w
+  kodzie jako baseline porównawczy do README/demo, nie jako ścieżka produkcyjna.
+
+- **Decyzja:** osobny model do embeddingów (`nomic-embed-text`, ~274MB) zamiast
+  używania `llama3.1:8b` (modelu generatywnego) do liczenia wektorów.
+  **Dlaczego:** `llama3.1:8b` nie jest modelem embeddingowym — użycie go do tego
+  celu byłoby wolniejsze i przyniosłoby gorszą jakość wyszukiwania niż dedykowany,
+  mały model embeddingowy. Rozdzielenie ról (embedding vs. generacja) to
+  standardowa praktyka w architekturach RAG.
+  **Efekt:** `config.py` ma teraz `ollama_embed_model` obok `ollama_model`.
+
 ## Aktualizacja planu — 2026-08-19
 
 - **Decyzja:** Langfuse Cloud (free/Hobby tier) zamiast self-hosted (Docker).

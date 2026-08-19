@@ -28,7 +28,7 @@ def retrieve(
     k: int = 4,
 ) -> list[RetrievedChunk]:
     client = client or chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    embeddings = OllamaEmbeddings(model=settings.ollama_model, base_url=settings.ollama_base_url)
+    embeddings = OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
     collection = client.get_collection(collection_name)
 
     result = collection.query(query_embeddings=[embeddings.embed_query(query)], n_results=k)

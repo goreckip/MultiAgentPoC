@@ -37,7 +37,7 @@ def _chunks_to_records(chunks: list[Chunk]) -> tuple[list[str], list[str], list[
 
 def build_index(client: chromadb.ClientAPI | None = None) -> chromadb.ClientAPI:
     client = client or chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    embeddings = OllamaEmbeddings(model=settings.ollama_model, base_url=settings.ollama_base_url)
+    embeddings = OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
 
     fixed_collection = client.get_or_create_collection(COLLECTION_FIXED)
     section_collection = client.get_or_create_collection(COLLECTION_SECTION)
