@@ -16,7 +16,9 @@ class Settings:
     confidence_threshold: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
     langfuse_public_key: str | None = os.getenv("LANGFUSE_PUBLIC_KEY")
     langfuse_secret_key: str | None = os.getenv("LANGFUSE_SECRET_KEY")
-    langfuse_host: str = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
+    # Langfuse Cloud free tier — regional hosts: https://us.cloud.langfuse.com or
+    # https://cloud.langfuse.com (EU). No self-hosted Docker instance for this project.
+    langfuse_host: str = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
 
 settings = Settings()
