@@ -1,0 +1,26 @@
+[project]
+name = "multiagent-poc"
+version = "0.1.0"
+description = "Multi-Agent Retail Ops Assistant — RAG + intent classification + sub-agents + data validation PoC"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-community>=0.3",
+    "langchain-ollama>=0.2",
+    "chromadb>=0.5",
+    "pydantic>=2.8",
+    "streamlit>=1.38",
+    "langfuse>=2.50",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
