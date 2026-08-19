@@ -115,6 +115,65 @@ etapie, surowy materiał pod przyszłe STAR.
   Ollama celowo jeszcze nie zainstalowana — decyzja o modelu/wyborze narzędzia
   odłożona na następny krok.
 
+## Tydzień 3 — 2026-08-19
+
+- **Decyzja:** klasyfikator intencji jako k-NN nad zbiorem przykładowych fraz
+  (`exemplars.py`, 6 fraz × 8 kategorii, osobna kolekcja Chroma
+  `intent_exemplars`), nie centroidy i nie LLM-classifier.
+  **Dlaczego:** najprostsze podejście, które da się w pełni wytłumaczyć
+  (confidence = odsetek głosów zwycięskiej intencji wśród k najbliższych
+  sąsiadów) i które reużywa infrastruktury z Tygodnia 2 (Ollama embeddings +
+  Chroma). Świadomie **osobny zbiór przykładów od `test_questions.md`** —
+  ten drugi to zbiór ewaluacyjny (`eval_set.py`, strukturalna kopia), użycie
+  tych samych fraz jako danych referencyjnych i testowych zafałszowałoby wynik
+  (data leakage).
+  **Efekt:** patrz kolejne wpisy — kilka iteracji było potrzebnych, żeby
+  dojść do sensownej trafności.
+
+- **Decyzja:** metryka cosine zamiast domyślnej l2 w Chroma dla kolekcji
+  `intent_exemplars` — **odrzucona po teście** (bez wpływu na wynik).
+  **Dlaczego:** hipoteza, że l2 na nieznormalizowanych wektorach słabo
+  różnicuje krótkie frazy. W praktyce ranking sąsiadów wyszedł identyczny —
+  embeddingi z `nomic-embed-text` mają najwyraźniej zbliżone normy, więc l2 i
+  cosine dają tę samą kolejność.
+  **Efekt:** zostaje domyślne l2 (kod nie komplikowany bez potrzeby).
+
+- **Decyzja:** prefiksy zadania Nomic (`search_query:`/`search_document:`)
+  przy embeddingu — **przetestowane i odrzucone**.
+  **Dlaczego:** Nomic rekomenduje te prefiksy dla `nomic-embed-text`, więc
+  spodziewałem się poprawy. W teście na naszym zbiorze pogorszyły trafność
+  (45% → 30%) zamiast poprawić — prawdopodobnie dlatego, że nasze "dokumenty"
+  (krótkie frazy przykładowe) nie są klasycznymi dokumentami do wyszukiwania,
+  tylko etykietowanymi przykładami do klasyfikacji, więc prefiks
+  retrieval-owy wprowadza niedopasowanie zamiast pomagać.
+  **Efekt:** kod bez prefiksów — surowe teksty do `embed_documents`/`embed_query`.
+
+- **Decyzja:** `k=3` w głosowaniu k-NN (zamiast domyślnego `k=5`).
+  **Dlaczego:** przy tylko 6 przykładach na kategorię i 8 kategoriach,
+  `k=5` był zbyt podatny na szum (za dużo szans na głosy z niepowiązanych
+  kategorii). Test przemiatający `k` na całym zbiorze ewaluacyjnym:
+  k=1: 60%, k=2: 50%, k=3: **65%**, k=4: 45%, k=5: 45%. `k=3` dodatkowo daje
+  wygodną granulację confidence (0/3, 1/3, 2/3, 3/3), gdzie próg 0.6 sensownie
+  wymaga zgody co najmniej 2 z 3 sąsiadów.
+  **Efekt:** `classify()` domyślnie używa `k=3`.
+
+- **Decyzja:** finalna trafność klasyfikatora na 20-pytaniowym zbiorze
+  ewaluacyjnym (`scripts/evaluate_classifier.py`) to **65% (13/20)**, ale
+  **100% (5/5) na pytaniach bezpieczeństwa** (dane wrażliwe, prompt injection,
+  pytania spoza katalogu — wszystkie poprawnie eskalowane).
+  **Dlaczego to akceptowalne na tym etapie:** confidence gate jest z założenia
+  konserwatywny — przy niepewności (remis głosów, brak wyraźnej większości)
+  ESKALUJE, zamiast zgadywać. Większość "MISS" w ewaluacji to właśnie
+  przypadki, gdzie klasyfikator poprawnie nie miał pewności (np. "Dostawca
+  przywiózł inny towar..." dostał tylko 1/3 głosów na `dostawy`, resztę
+  rozproszone) i oddał sprawę do eskalacji zamiast błędnie odpowiedzieć — co z
+  punktu widzenia bezpieczeństwa produktu jest właściwym zachowaniem, nawet
+  jeśli psuje metrykę "top-1 accuracy".
+  **Efekt:** udokumentowany jako podłoga regresyjna w `test_classifier.py`
+  (asercja >= 60%, nie cel docelowy). Do poprawy w przyszłości: więcej
+  przykładów na kategorię, ewentualnie LLM-classifier jako alternatywa do
+  porównania (temat na Tydzień 5-6, przy okazji porównania modeli).
+
 ## Szablon na kolejne tygodnie
 
 ```

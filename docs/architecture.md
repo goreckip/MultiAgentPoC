@@ -39,7 +39,12 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Runbooki (RAG source) | [`docs/runbooks/`](runbooks/) | 8 mockowych procedur + README z celowymi pułapkami testowymi (zazębiające się kategorie, progi kwotowe, sekcje "czego NIE robimy"). |
 | Pytania testowe | [`docs/test_questions.md`](test_questions.md) | 20 pytań pod klasyfikator/confidence gate/walidację, w tym dwuznaczne i spoza katalogu. |
 | Testy jednostkowe | [`tests/`](../tests/) | `test_intents.py` (katalog intencji ↔ pliki runbooków), `test_chunking.py` (porównanie strukturalne dwóch strategii, bez potrzeby embeddingów). |
-| Eksperyment porównawczy | [`scripts/compare_chunking.py`](../scripts/compare_chunking.py) | Realne porównanie retrievalu (żywe embeddingi) na pytaniu o pomyłkę dostawcy — wynik: `section_chunks` wygrywa, patrz decision log. |
+| Eksperyment porównawczy (chunking) | [`scripts/compare_chunking.py`](../scripts/compare_chunking.py) | Realne porównanie retrievalu (żywe embeddingi) na pytaniu o pomyłkę dostawcy — wynik: `section_chunks` wygrywa, patrz decision log. |
+| Katalog przykładów intencji | [`src/multiagent_poc/classification/exemplars.py`](../src/multiagent_poc/classification/exemplars.py) | 6 przykładowych fraz na każdą z 8 intencji procesowych (celowo inne niż w `test_questions.md`, żeby uniknąć data leakage). |
+| Klasyfikator intencji | [`src/multiagent_poc/classification/classifier.py`](../src/multiagent_poc/classification/classifier.py) | k-NN (k=3) nad embeddingami przykładów w Chroma (`intent_exemplars`); confidence = odsetek zgodnych głosów wśród sąsiadów. |
+| Confidence gate | [`src/multiagent_poc/classification/gate.py`](../src/multiagent_poc/classification/gate.py) | Powyżej progu (`config.confidence_threshold`) → auto-routing na wykrytą intencję; poniżej → efektywna intencja `inne` + eskalacja. |
+| Zbiór ewaluacyjny | [`src/multiagent_poc/classification/eval_set.py`](../src/multiagent_poc/classification/eval_set.py) | Strukturalna kopia `docs/test_questions.md` do automatycznych testów klasyfikatora. |
+| Eksperyment porównawczy (klasyfikator) | [`scripts/evaluate_classifier.py`](../scripts/evaluate_classifier.py) | Uruchamia klasyfikator + gate na całym zbiorze ewaluacyjnym, raportuje trafność i każdą pomyłkę. |
 
 **Zweryfikowane działanie:** `pytest` (4/4 testy), realna indeksacja do Chroma i
 realny retrieval przez Ollama (`llama3.1:8b` + `nomic-embed-text`) — patrz wpis
@@ -50,12 +55,12 @@ realny retrieval przez Ollama (`llama3.1:8b` + `nomic-embed-text`) — patrz wpi
 | Moduł | Plik | Odpowiada za warstwę |
 |---|---|---|
 | Subagenci | `src/multiagent_poc/agents/` | 4 |
-| Graf/routing | `src/multiagent_poc/graph/` | 2, 4 |
+| Graf/routing (spięcie klasyfikatora + gate + RAG w jeden pipeline) | `src/multiagent_poc/graph/` | 2, 4 |
 | Walidacja | `src/multiagent_poc/validation/` | 5 |
 | HITL | `src/multiagent_poc/hitl/` | 6 |
 
-Klasyfikator intencji, confidence gate, Streamlit UI i integracja Langfuse
-jeszcze nie mają nawet szkieletu plików — patrz `requirements.md` po status.
+Streamlit UI i integracja Langfuse jeszcze nie mają nawet szkieletu plików —
+patrz `requirements.md` po pełny status.
 
 ## Stack
 

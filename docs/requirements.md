@@ -11,18 +11,18 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 |---|---|---|---|---|
 | 1.1 | Katalog intencji zdefiniowany (8 procesowych + `inne`) | ✅ | 1 | MVP |
 | 1.2 | Jedno źródło prawdy: intencja ↔ plik runbooka | ✅ | 1 | MVP |
-| 1.3 | Klasyfikator (embedding similarity lub lekki LLM classifier) | ⬜ | 3 | MVP |
-| 1.4 | Zwracanie confidence score razem z intencją | ⬜ | 3 | MVP |
+| 1.3 | Klasyfikator (embedding similarity lub lekki LLM classifier) | ✅ (k-NN nad exemplarami, `classification/classifier.py`) | 3 | MVP |
+| 1.4 | Zwracanie confidence score razem z intencją | ✅ (odsetek głosów, `IntentClassification.confidence`) | 3 | MVP |
 
 ## Warstwa 2 — Confidence gate
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 2.1 | Próg pewności w konfiguracji | ✅ (wartość domyślna w `config.py`, nieużywana jeszcze w logice) | 1 | MVP |
-| 2.2 | Logika: powyżej progu → auto-odpowiedź | ⬜ | 3 | MVP |
-| 2.3 | Logika: poniżej progu → dopytanie lub eskalacja | ⬜ | 3 | MVP |
-| 2.4 | Test na pytaniach dwuznacznych (3, 10, 13 w `test_questions.md`) | ⬜ | 3 | MVP |
-| 2.5 | Test na pytaniach spoza katalogu / kategoria `inne` (14, 15) | ⬜ | 3 | MVP |
+| 2.1 | Próg pewności w konfiguracji | ✅ | 1 | MVP |
+| 2.2 | Logika: powyżej progu → auto-odpowiedź | ✅ (`classification/gate.py`) | 3 | MVP |
+| 2.3 | Logika: poniżej progu → eskalacja (efektywna intencja `inne`) | ✅ | 3 | MVP (dopytanie zamiast eskalacji — nie zrobione, patrz uwaga w `sequence_diagram.md`) |
+| 2.4 | Test na pytaniach dwuznacznych (3, 10, 13 w `test_questions.md`) | 🚧 (zmierzone, ale klasyfikator ich nie rozróżnia dobrze — patrz `decision_log.md`) | 3 | MVP |
+| 2.5 | Test na pytaniach spoza katalogu / danych wrażliwych (14-16, 19, 20) | ✅ (5/5 poprawnie eskalowanych, `test_classifier.py`) | 3 | MVP |
 
 ## Warstwa 3 — RAG nad runbookami
 
@@ -99,8 +99,13 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Skrócone podsumowanie (na dziś)
 
-- **MVP core (klasyfikacja → RAG → odpowiedź z confidence gate):** RAG gotowe
-  i zweryfikowane, klasyfikacja intencji i confidence gate — jeszcze nie zaczęte.
-  To jest priorytet na Tydzień 3.
+- **MVP core (klasyfikacja → RAG → odpowiedź z confidence gate):** wszystkie
+  trzy elementy istnieją i działają na żywych danych (Ollama). Brakuje tylko
+  spięcia ich w jeden pipeline (dziś to osobne moduły wywoływane ręcznie w
+  skryptach) — to zadanie na graf LangGraph w Tygodniu 4.
+- **Klasyfikator — znana słabość:** 65% top-1 accuracy, ale 100% na
+  pytaniach bezpieczeństwa (dane wrażliwe/prompt injection/spoza katalogu).
+  Gate świadomie eskaluje przy niepewności zamiast zgadywać — patrz
+  `decision_log.md` po pełne uzasadnienie i liczby.
 - **Stretch (subagenci, walidacja, HITL, Langfuse, UI, ewaluacja):** w całości
   przed nami, zaplanowane na Tygodnie 4-6.

@@ -58,10 +58,12 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 2: RAG (chunking, indeksacja, retrieval+generacja) gotowe i
-zweryfikowane na żywych danych z Ollama. Klasyfikacja intencji i confidence
-gate — następne w kolejce (Tydzień 3). Pełny status per wymaganie — patrz
-[`docs/requirements.md`](docs/requirements.md).
+Po Tygodniu 3: RAG i klasyfikacja intencji + confidence gate gotowe i
+zweryfikowane na żywych danych z Ollama (65% trafności top-1, 100% na
+pytaniach bezpieczeństwa — dane wrażliwe, prompt injection, pytania spoza
+katalogu zawsze poprawnie eskalowane). Następny krok: spięcie tego w jeden
+graf LangGraph + subagenci per kategoria (Tydzień 4). Pełny status per
+wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
 
 ## Setup (dev)
 
