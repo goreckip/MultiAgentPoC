@@ -53,12 +53,9 @@ def auto_answer_node(state: GraphState) -> dict:
 
 
 def escalate_node(state: GraphState) -> dict:
-    human_answer = interrupt(
-        {
-            "question": state["question"],
-            "reason": f"confidence={state.get('confidence')} < próg" if state.get("confidence") is not None else "brak dopasowania do katalogu intencji",
-        }
-    )
+    confidence = state.get("confidence")
+    reason = f"confidence={confidence:.2f} < próg" if confidence is not None else "brak dopasowania do katalogu intencji"
+    human_answer = interrupt({"question": state["question"], "reason": reason})
     return {"answer": human_answer, "sources": []}
 
 

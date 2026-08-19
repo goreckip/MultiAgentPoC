@@ -309,6 +309,43 @@ etapie, surowy materiał pod przyszłe STAR.
   czy zgłosić brak dopasowania zamiast zgadywać") jako dodatkowa siatka
   bezpieczeństwa nad samym gate.
 
+## Tydzień 5 (część 1) — Streamlit UI — 2026-08-20
+
+- **Decyzja:** jedna strona Streamlit z dwiema sekcjami (formularz pytania +
+  panel HITL), nie osobne widoki dla pracownika i operatora.
+  **Dlaczego:** świadomy wybór użytkownika — do solo-demo (jedna osoba
+  symuluje obie role) prostsze niż multi-page routing, mniej kodu
+  nawigacyjnego. Szczegóły techniczne (intencja, confidence, flagi) zawsze
+  widoczne w expanderze pod odpowiedzią — też świadomy wybór, dobre pod
+  demo/rozmowę kwalifikacyjną (widać confidence gate na żywo), kosztem
+  czystości UX docelowego dla pracownika sklepu.
+  **Efekt:** `app.py`, jeden plik, `st.cache_resource` dla instancji grafu
+  (bezpieczne mimo współdzielenia między "użytkownikami" — cały stan wątku
+  rozmowy trzyma checkpointer `MemorySaver`, keyowany po `thread_id` w
+  `st.session_state`, nie w obiekcie grafu).
+
+- **Decyzja:** `chroma_persist_dir` w `config.py` zmieniony z domyślnej
+  ścieżki względnej (`"data/chroma"`) na bezwzględną (liczona względem
+  `PROJECT_ROOT`, tak jak ścieżki ClamAV i runbooków).
+  **Dlaczego:** Streamlit (i ogólnie serwery uruchamiane przez zewnętrzne
+  narzędzia/IDE) niekoniecznie mają katalog roboczy ustawiony na root
+  projektu — ścieżka względna po cichu tworzyłaby nową, pustą bazę Chroma
+  zamiast używać już zaindeksowanych runbooków. Znaleziono i naprawiono
+  proaktywnie, przed uruchomieniem UI, nie jako efekt awarii na żywo.
+  **Efekt:** wszystkie ścieżki w configu są teraz cwd-niezależne.
+
+- **Weryfikacja na żywo (Browser preview):** przetestowany pełny przepływ w
+  przeglądarce — (1) pytanie z niską pewnością poprawnie eskaluje i pokazuje
+  panel HITL, wpisana odpowiedź operatora poprawnie wraca do historii jako
+  "Rozwiązane przez: człowiek (HITL)"; (2) pytanie z PESEL-em poprawnie
+  odrzucone przez walidację, nigdy nie dotarło do klasyfikatora; (3) pytanie
+  BHP z wysoką pewnością auto-odpowiedziane, treść zgodna z runbookiem.
+  **Zaobserwowana latencja:** ok. 78s na pełny cykl klasyfikacja+generacja
+  dla trzeciego przypadku — CPU-only inference `llama3.1:8b` na tej maszynie
+  jest zauważalnie wolne. Zaakceptowane dla PoC (interfejs pokazuje spinner
+  z opisem etapu), ale warte odnotowania jako realne ograniczenie przy
+  ewentualnym demo na żywo — GPU albo mniejszy model skróciłyby to znacząco.
+
 ## Szablon na kolejne tygodnie
 
 ```

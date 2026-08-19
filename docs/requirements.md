@@ -64,7 +64,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 |---|---|---|---|---|
 | 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | 🚧 (mechanizm pauzy/wznowienia działa; brak trwałej kolejki/UI — dziś to jeden wątek w pamięci) | 4 | Stretch (dodane po planie bazowym) |
 | 6.2 | `interrupt()` + checkpointer w LangGraph | ✅ (`graph/pipeline_graph.py`, zweryfikowane na żywo w `scripts/demo_graph.py`) | 4 | Stretch |
-| 6.3 | Panel HITL w Streamlit (człowiek widzi kolejkę, odpowiada) | ⬜ | 5 | Stretch |
+| 6.3 | Panel HITL w Streamlit (człowiek widzi kolejkę, odpowiada) | ✅ (`app.py`, sekcja 2 — jedno pytanie na raz, nie trwała kolejka wielu jednocześnie) | 5 | Stretch |
 
 ## Warstwa 7 — Observability
 
@@ -77,8 +77,8 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 8.1 | Streamlit UI (zadawanie pytań, wyświetlanie odpowiedzi) | ⬜ | 5 | Stretch |
-| 8.2 | Testy end-to-end na pełnym pipeline | ⬜ | 5 | MVP (dla samego MVP: klasyfikacja→RAG→odpowiedź) |
+| 8.1 | Streamlit UI (zadawanie pytań, wyświetlanie odpowiedzi) | ✅ (`app.py`, w tym upload PDF i szczegóły techniczne w expanderze) | 5 | Stretch |
+| 8.2 | Testy end-to-end na pełnym pipeline | ✅ (ręczna weryfikacja w przeglądarce: auto-odpowiedź, odrzucenie walidacji, HITL pause/resume — patrz `decision_log.md`) | 5 | MVP (dla samego MVP: klasyfikacja→RAG→odpowiedź) |
 
 ## Warstwa 9 — Ewaluacja i dokumentacja
 
@@ -114,7 +114,8 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
   udokumentowane w `decision_log.md`, nie ukryte. Pytania bezpieczeństwa
   (dane wrażliwe/prompt injection/spoza katalogu) nadal 100% poprawnie
   odrzucane/eskalowane.
-- **Zostało realnie do zrobienia:** Langfuse (obserwowalność), Streamlit UI
-  (w tym panel HITL), trwała kolejka HITL (dziś tylko checkpointer w
-  pamięci procesu), routing przy jawnie zazębiających się kategoriach,
-  framework ewaluacyjny, case study, porównanie LangChain vs Pydantic AI.
+- **Zostało realnie do zrobienia:** Langfuse (obserwowalność — czeka na
+  założenie konta przez użytkownika), trwała kolejka HITL obsługująca wiele
+  jednoczesnych eskalacji (dziś Streamlit obsługuje jedną naraz), routing
+  przy jawnie zazębiających się kategoriach, framework ewaluacyjny, case
+  study, porównanie LangChain vs Pydantic AI.

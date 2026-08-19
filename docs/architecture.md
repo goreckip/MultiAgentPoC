@@ -25,7 +25,7 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 6. Human-in-the-loop (`interrupt()` w LangGraph) — 🚧 mechanizm działa, brak trwałej kolejki/UI
 7. Observability (Langfuse Cloud, free tier) — ⬜
 
-## Co istnieje dzisiaj (2026-08-19, po Tygodniu 4)
+## Co istnieje dzisiaj (2026-08-20, po Tygodniu 5 część 1)
 
 ### Zaimplementowane i przetestowane
 
@@ -53,26 +53,29 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja z Tygodnia 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
 | Graf LangGraph (routing + HITL) | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) | Spina walidację+klasyfikację+gate+załącznik (`classification/pipeline.py`) z subagentem albo węzłem eskalacji przez `interrupt()`/`Command(resume=...)`, z `MemorySaver` jako checkpointerem. |
 | Demo grafu end-to-end (na żywo) | [`scripts/demo_graph.py`](../scripts/demo_graph.py) | Trzy realne przypadki: auto-odpowiedź, odrzucenie walidacji, eskalacja z pauzą i wznowieniem HITL. |
+| Streamlit UI | [`app.py`](../app.py) | Formularz pytania (+ opcjonalny upload PDF), panel HITL operatora, historia rozmowy ze szczegółami technicznymi. Jedna strona, dwie sekcje — patrz decision log po uzasadnienie. |
 
 **Zweryfikowane działanie:** `pytest` (32/32 testy), pełny graf na żywo
 (auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
-patrz wpisy "Tydzień 3" i "Tydzień 4" w `decision_log.md`, w tym uczciwie
-odnotowane znane ograniczenie klasyfikatora ujawnione w live demo grafu.
+patrz wpisy "Tydzień 3", "Tydzień 4" i "Tydzień 5" w `decision_log.md`, w tym
+uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live demo
+grafu, oraz pełny przepływ zweryfikowany ręcznie w przeglądarce (Streamlit UI).
 
 ### Zaplanowane, jeszcze puste
 
 | Moduł | Plik | Odpowiada za warstwę |
 |---|---|---|
-| HITL — trwała kolejka + UI | `src/multiagent_poc/hitl/` | 6 |
+| HITL — trwała kolejka (wiele jednoczesnych eskalacji) | `src/multiagent_poc/hitl/` | 6 |
+| Observability | — | 7 |
 
-Streamlit UI i integracja Langfuse jeszcze nie mają nawet szkieletu plików —
-patrz `requirements.md` po pełny status.
+Integracja Langfuse czeka na założenie konta Langfuse Cloud przez użytkownika
+— patrz `requirements.md` po pełny status.
 
 ## Stack
 
 LangGraph + LangChain, Ollama (lokalnie: `llama3.1:8b` do generacji,
 `nomic-embed-text` do embeddingów), Chroma (lokalna, persystentna), Langfuse
-Cloud (free tier, zaplanowane), Streamlit (UI, zaplanowane).
+Cloud (free tier, zaplanowane), Streamlit (UI — działa, `app.py`).
 
 ## Środowisko dev
 

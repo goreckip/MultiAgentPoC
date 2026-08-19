@@ -40,6 +40,7 @@ docs/
   runbooks/          — mockowe procedury (źródło RAG)
   test_questions.md  — zestaw pytań testowych klasyfikatora/confidence gate
   decision_log.md    — log decyzji projektowych (materiał na STAR)
+app.py                — Streamlit UI (pytanie + upload PDF, panel HITL, historia)
 src/multiagent_poc/
   intents.py         — katalog intencji (źródło prawdy)
   config.py          — konfiguracja (Ollama/Chroma/Langfuse)
@@ -57,21 +58,34 @@ data/chroma/          — lokalny wektorowy store (gitignored)
 ## Stack
 
 LangGraph + LangChain, Ollama (Llama 3.1 8B, lokalnie), Chroma, Langfuse Cloud (free tier),
-Streamlit (UI, opcjonalnie — także jako panel HITL do zatwierdzania eskalacji).
+Streamlit (UI, w tym panel HITL do zatwierdzania eskalacji).
 Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 4: warstwy 1-5 kompletne i spięte w jeden graf LangGraph —
-walidacja → klasyfikacja intencji + confidence gate (opcjonalnie wspomagana
-załącznikiem PDF) → subagent per kategoria (RAG filtrowany do właściwego
-runbooka) albo eskalacja do człowieka przez `interrupt()`/`resume`.
-Zweryfikowane na żywo end-to-end (`scripts/demo_graph.py`), łącznie z
-uczciwie udokumentowanym, realnym przypadkiem błędnej klasyfikacji ujawnionym
-w tym demo — patrz [`docs/decision_log.md`](docs/decision_log.md). Zostało:
-Langfuse, Streamlit UI (w tym panel HITL), trwała kolejka HITL, framework
+Po Tygodniu 5 (część 1): warstwy 1-5 kompletne i spięte w jeden graf
+LangGraph, z działającym UI — walidacja → klasyfikacja intencji + confidence
+gate (opcjonalnie wspomagana załącznikiem PDF) → subagent per kategoria (RAG
+filtrowany do właściwego runbooka) albo eskalacja do człowieka przez
+`interrupt()`/`resume`, obsługiwana w panelu HITL w Streamlit
+([`app.py`](app.py)). Zweryfikowane na żywo end-to-end w przeglądarce, łącznie
+z uczciwie udokumentowanym, realnym przypadkiem błędnej klasyfikacji — patrz
+[`docs/decision_log.md`](docs/decision_log.md). Zostało: Langfuse (czeka na
+konto), trwała kolejka HITL dla wielu jednoczesnych eskalacji, framework
 ewaluacyjny. Pełny status per wymaganie — patrz
 [`docs/requirements.md`](docs/requirements.md).
+
+## Uruchomienie UI
+
+```bash
+streamlit run app.py
+```
+Wymaga działającej Ollamy (`llama3.1:8b`, `nomic-embed-text` — patrz Setup
+poniżej) i wcześniej zbudowanego indeksu Chroma
+(`python -m multiagent_poc.rag.index` oraz
+`python -m multiagent_poc.classification.classifier` do zaindeksowania
+przykładów intencji). Odpowiedzi generowane lokalnie na CPU — jeden pełny
+cykl (klasyfikacja + generacja) może potrwać do ok. minuty, patrz `decision_log.md`.
 
 ## Setup (dev)
 
