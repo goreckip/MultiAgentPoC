@@ -46,6 +46,35 @@ etapie, surowy materiał pod przyszłe STAR.
   kolejkowania od zera).
   **Efekt:** TBD — planowana implementacja w Tygodniu 4 razem z warstwą walidacji.
 
+## Tydzień 2 — 2026-08-19
+
+- **Decyzja:** dwie strategie chunkingu zaimplementowane jako osobne, testowalne
+  funkcje (`fixed_size_chunks`, `section_chunks`) w `src/multiagent_poc/rag/chunking.py`,
+  każda indeksowana do osobnej kolekcji Chroma (`runbooks_fixed_size`, `runbooks_section`).
+  **Dlaczego:** żeby porównanie z README runbooków (pytanie o pomyłkę dostawcy, sekcja
+  4.3) dało się zweryfikować kodem, a nie tylko "na oko". `section_chunks` dodatkowo
+  dokleja ścieżkę nagłówków (`heading_path`) do treści chunku, żeby fragment osadzony
+  w podsekcji (`### 4.3`) nie tracił kontekstu sekcji nadrzędnej (`## 4.`).
+  **Efekt:** test strukturalny (`tests/test_chunking.py`, bez potrzeby uruchamiania
+  embeddingów) potwierdza, że `section_chunks` daje dokładnie jeden, samodzielny,
+  tematycznie czysty chunk dla sekcji 4.3, podczas gdy `fixed_size_chunks` (500
+  znaków, overlap 50) nie gwarantuje ani spójności, ani informacji o sekcji źródłowej.
+  Pełne porównanie jakości retrievalu (z realnymi embeddingami) czeka na decyzję
+  o modelu (Ollama vs. inny) — patrz niżej.
+
+- **Decyzja:** środowisko Python postawione jako "embeddable" dystrybucja
+  (`.python/` w repo, gitignored) + ręcznie doinstalowany pip, zamiast standardowego
+  instalatora MSI czy `winget`.
+  **Dlaczego:** zarówno `winget install Python.Python.3.12`, jak i oficjalny
+  installer python.org (nawet w trybie per-user, `/quiet InstallAllUsers=0`)
+  zawodziły w tym środowisku — MSI kończył się błędem `0x80070003` (usługa Windows
+  Installer nie miała dostępu do plików tymczasowych, prawdopodobnie z powodu
+  ograniczeń sandboxa/uprawnień na tej maszynie). Wariant embeddable (ZIP, bez
+  instalatora) obszedł problem, bo nie korzysta z usługi MSI.
+  **Efekt:** `pytest` (4 testy: chunking + katalog intencji) przechodzi lokalnie.
+  Ollama celowo jeszcze nie zainstalowana — decyzja o modelu/wyborze narzędzia
+  odłożona na następny krok.
+
 ## Szablon na kolejne tygodnie
 
 ```

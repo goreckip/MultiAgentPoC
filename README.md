@@ -66,3 +66,7 @@ cp .env.example .env
 ollama pull llama3.1:8b
 pytest
 ```
+
+Uwaga (Windows): jeśli standardowy instalator Pythona (MSI) nie działa w Twoim
+środowisku (np. sandbox blokujący usługę Windows Installer), zadziałał wariant
+embeddable Python + ręczny `get-pip.py` — patrz `docs/decision_log.md`.
