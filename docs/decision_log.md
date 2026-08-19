@@ -48,6 +48,18 @@ etapie, surowy materiał pod przyszłe STAR.
 
 ## Tydzień 2 — 2026-08-19
 
+- **Decyzja:** rozważono i odrzucono podpięcie modeli Claude (Sonnet/Opus) jako
+  głównego silnika LLM, zamiast Ollamy — projekt zostaje przy Ollamie.
+  **Dlaczego:** subskrypcja Claude (Pro/Max, czat/Claude Code) nie daje dostępu do
+  Anthropic API używanego przez LangChain/LangGraph w kodzie — to osobne,
+  rozliczane per-token rozliczenie. Podpięcie na stałe złamałoby założenie
+  "wszystko za darmo" z planu projektu. Ollama (Llama 3.1 8B) jest wyraźnie słabsza
+  jakościowo, ale to świadomy trade-off koszt/lokalność vs jakość — sam w sobie
+  dobry materiał na STAR.
+  **Efekt:** brak zmian w kodzie/configu. Opcja porównania z API (darmowe/tanie
+  kredyty, np. `claude-haiku-4-5`) zostaje odłożona do Tygodnia 5-6 jako
+  jednorazowy test jakościowy w README, nie jako stały provider w pipeline.
+
 - **Decyzja:** dwie strategie chunkingu zaimplementowane jako osobne, testowalne
   funkcje (`fixed_size_chunks`, `section_chunks`) w `src/multiagent_poc/rag/chunking.py`,
   każda indeksowana do osobnej kolekcji Chroma (`runbooks_fixed_size`, `runbooks_section`).
