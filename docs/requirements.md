@@ -41,18 +41,18 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 4.1 | Graf LangGraph (routing między węzłami) | ⬜ | 4 | Stretch |
-| 4.2 | Osobny subagent/prompt per kategoria procesu | ⬜ | 4 | Stretch |
-| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ | 4 | Stretch |
+| 4.1 | Graf LangGraph (routing między węzłami) | ✅ (`graph/pipeline_graph.py`) | 4 | Stretch |
+| 4.2 | Osobny subagent/prompt per kategoria procesu | ✅ (`agents/subagent.py`, retrieval filtrowany do runbooka + prompt per kategoria) | 4 | Stretch |
+| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ (nie osobno testowane w grafie — dziedziczy ograniczenia klasyfikatora z Tygodnia 3) | 4 | Stretch |
 
 ## Warstwa 5 — Walidacja danych wejściowych
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 5.1 | Wykrywanie danych wrażliwych w pytaniu (np. PESEL — pytanie 16) | ⬜ | 4 | Stretch |
-| 5.2 | Walidacja formatu numeru zamówienia (pytania 17, 18) | ⬜ | 4 | Stretch |
-| 5.3 | Sprawdzanie uprawnień do kategorii pytań (pytanie 19) | ⬜ | 4 | Stretch |
-| 5.4 | Odporność na prompt injection (pytanie 20) | ⬜ | 4 | Stretch |
+| 5.1 | Wykrywanie danych wrażliwych w pytaniu (np. PESEL — pytanie 16) | ✅ (regex + suma kontrolna PESEL, `validation/input_validation.py`) | 4 | Stretch |
+| 5.2 | Walidacja formatu numeru zamówienia (pytania 17, 18) | ✅ (flaguje, nie blokuje — patrz decision log) | 4 | Stretch |
+| 5.3 | Sprawdzanie uprawnień do kategorii pytań (pytanie 19) | ✅ (heurystyka: pytanie o wynagrodzenie osoby trzeciej → odrzut) | 4 | Stretch |
+| 5.4 | Odporność na prompt injection (pytanie 20) | ✅ (lista wzorców, np. "ignoruj poprzednie instrukcje") | 4 | Stretch |
 | 5.5 | Załącznik PDF (np. zamówienie) jako dodatkowy kontekst, gdy `confidence < próg` | ✅ (`classification/pipeline.py`, zweryfikowane na żywo — patrz `decision_log.md`) | 4 | Stretch (dodane po planie bazowym, 2026-08-19) |
 | 5.6 | Skan antywirusowy załącznika przed jakimkolwiek parsowaniem/przekazaniem dalej | ✅ (ClamAV lokalnie, blokujące i bezwarunkowe — `validation/attachment_scan.py`) | 4 | Stretch |
 | 5.7 | Parsowanie treści PDF (tekst → embedding, bez OCR obrazów na start) | ✅ (`validation/attachment.py`, pypdf) | 4 | Stretch |
@@ -62,8 +62,8 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | ⬜ | 4 | Stretch (dodane po planie bazowym) |
-| 6.2 | `interrupt()` + checkpointer w LangGraph | ⬜ | 4 | Stretch |
+| 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | 🚧 (mechanizm pauzy/wznowienia działa; brak trwałej kolejki/UI — dziś to jeden wątek w pamięci) | 4 | Stretch (dodane po planie bazowym) |
+| 6.2 | `interrupt()` + checkpointer w LangGraph | ✅ (`graph/pipeline_graph.py`, zweryfikowane na żywo w `scripts/demo_graph.py`) | 4 | Stretch |
 | 6.3 | Panel HITL w Streamlit (człowiek widzi kolejkę, odpowiada) | ⬜ | 5 | Stretch |
 
 ## Warstwa 7 — Observability
@@ -99,17 +99,22 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | I.1 | Repo GitHub podłączone i zsynchronizowane | ✅ | `goreckip/MultiAgentPoC` |
 | I.2 | Środowisko Python działające lokalnie | ✅ | dystrybucja embeddable, MSI nie działał w tym środowisku |
 | I.3 | Ollama zainstalowana i modele pobrane | ✅ | `llama3.1:8b`, `nomic-embed-text` |
-| I.4 | `pytest` przechodzi | ✅ | 4/4 testy |
+| I.4 | `pytest` przechodzi | ✅ | 32/32 testy (po Tygodniu 4) |
+| I.5 | ClamAV zainstalowane lokalnie (do skanu załączników) | ✅ | portable build, `.clamav/` (gitignored) |
 
 ## Skrócone podsumowanie (na dziś)
 
-- **MVP core (klasyfikacja → RAG → odpowiedź z confidence gate):** wszystkie
-  trzy elementy istnieją i działają na żywych danych (Ollama). Brakuje tylko
-  spięcia ich w jeden pipeline (dziś to osobne moduły wywoływane ręcznie w
-  skryptach) — to zadanie na graf LangGraph w Tygodniu 4.
-- **Klasyfikator — znana słabość:** 65% top-1 accuracy, ale 100% na
-  pytaniach bezpieczeństwa (dane wrażliwe/prompt injection/spoza katalogu).
-  Gate świadomie eskaluje przy niepewności zamiast zgadywać — patrz
-  `decision_log.md` po pełne uzasadnienie i liczby.
-- **Stretch (subagenci, walidacja, HITL, Langfuse, UI, ewaluacja):** w całości
-  przed nami, zaplanowane na Tygodnie 4-6.
+- **MVP core + większość stretch celów Tygodnia 4 gotowe:** walidacja → gate
+  → klasyfikacja → (opcjonalnie załącznik) → subagent/RAG albo HITL, spięte w
+  jeden graf LangGraph z działającym `interrupt()`/`resume`. Zweryfikowane na
+  żywo (`scripts/demo_graph.py`), nie tylko testami z mockami.
+- **Klasyfikator — znana słabość, teraz widoczna też w grafie:** 65% top-1
+  accuracy (Tydzień 3). Live demo grafu ujawniło realny przypadek błędnej
+  klasyfikacji (pytanie o sanepid → `hr` zamiast eskalacji) — uczciwie
+  udokumentowane w `decision_log.md`, nie ukryte. Pytania bezpieczeństwa
+  (dane wrażliwe/prompt injection/spoza katalogu) nadal 100% poprawnie
+  odrzucane/eskalowane.
+- **Zostało realnie do zrobienia:** Langfuse (obserwowalność), Streamlit UI
+  (w tym panel HITL), trwała kolejka HITL (dziś tylko checkpointer w
+  pamięci procesu), routing przy jawnie zazębiających się kategoriach,
+  framework ewaluacyjny, case study, porównanie LangChain vs Pydantic AI.

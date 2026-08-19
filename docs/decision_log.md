@@ -247,6 +247,68 @@ etapie, surowy materiał pod przyszłe STAR.
   przykładami klasyfikatora (patrz znane ograniczenie klasyfikatora,
   Tydzień 3).
 
+## Tydzień 4 (część 2) — walidacja, subagenci, graf LangGraph, HITL — 2026-08-19
+
+- **Decyzja:** pozostałe reguły walidacji (PESEL, prompt injection, prośby o
+  dane osób trzecich, format numeru zamówienia) jako proste reguły
+  regex/keyword (`validation/input_validation.py`), nie osobny model/LLM-classifier.
+  **Dlaczego:** zakres PoC — cztery konkretne przypadki z `test_questions.md`
+  (16, 17/18, 19, 20), nie ogólny system DLP. PESEL dodatkowo zweryfikowany
+  sumą kontrolną (nie tylko "11 cyfr pod rząd"), żeby nie fałszywie odrzucać
+  np. losowego 11-cyfrowego numeru telefonu — test
+  `test_random_11_digits_without_valid_checksum_is_not_flagged_as_pesel`
+  pilnuje tego rozróżnienia.
+  **Efekt:** PESEL/prompt injection/dane osób trzecich → twardy odrzut
+  (`ValidationRejected`, pytanie nigdy nie dociera do klasyfikatora ani LLM-a).
+  Zły format numeru zamówienia → tylko flaga (`order_number_invalid_format`),
+  pytanie idzie dalej — bo pytania 17/18 w zbiorze ewaluacyjnym mają nadal
+  poprawnie klasyfikować się jako `dostawy`, niezależnie od poprawności
+  formatu numeru.
+
+- **Decyzja:** subagenci per kategoria (`agents/subagent.py`) to ten sam kod
+  retrieval+generacji z Tygodnia 2, ale (a) retrieval filtrowany do runbooka
+  danej intencji (`where={"source": ...}` w Chroma) i (b) krótki dopisek do
+  system promptu per kategoria (np. BHP → podkreśl pilność, reklamacje →
+  sekcja "czego NIE robimy" to twardy zakaz).
+  **Dlaczego:** to konkretna, testowalna różnica względem ogólnego RAG z
+  Tygodnia 2 (tam retrieval przeszukiwał cały korpus), a nie 8 kopii tego
+  samego kodu z różnymi nazwami plików — uniknięcie duplikacji przy
+  zachowaniu ducha "osobny agent per kategoria" z planu.
+  **Efekt:** zweryfikowane na żywo — pytanie o pomyłkę dostawcy zwraca
+  odpowiedź zgodną z sekcją 4.3 `01_dostawy.md` i `sources=['01_dostawy.md']`
+  (nigdy inny plik, dzięki filtrowi).
+
+- **Decyzja:** graf LangGraph (`graph/pipeline_graph.py`) jako cienka warstwa
+  routingu **nad** już istniejącym `classification/pipeline.py`, nie
+  przepisanie logiki od nowa w węzłach grafu.
+  **Dlaczego:** walidacja+klasyfikacja+gate+załącznik były już napisane i
+  przetestowane jako zwykłe funkcje Pythona (Tydzień 3-4/1) — graf dodaje
+  tylko to, czego zwykła funkcja nie potrafi: **pauzę i wznowienie** przez
+  `interrupt()`/`Command(resume=...)` dla eskalacji do człowieka, oraz
+  routing między węzłem auto-odpowiedzi (subagent) a węzłem HITL.
+  **Efekt:** zweryfikowane na żywo (`scripts/demo_graph.py`) — pytanie
+  eskalowane faktycznie **wstrzymuje graf** (`"__interrupt__"` w wyniku
+  `invoke`), a po `graph.invoke(Command(resume=odpowiedź), config=ten_sam_thread_id)`
+  stan wraca dokładnie tam, gdzie stanął, z odpowiedzią człowieka jako
+  finalną odpowiedzią. Wymaga `MemorySaver` (checkpointer) i stałego
+  `thread_id` w configu na cały wątek rozmowy.
+
+- **Znane ograniczenie (uczciwie odnotowane, nie ukryte):** live demo
+  (`scripts/demo_graph.py`) ujawniło żywy przykład problemu z Tygodnia 3 —
+  pytanie "Sanepid zapowiedział kontrolę na jutro, na co mam zwrócić uwagę?"
+  zostało błędnie sklasyfikowane jako `hr` (confidence 0.67, powyżej progu),
+  więc trafiło do auto-odpowiedzi zamiast eskalacji, a subagent HR
+  odpowiedział, że nie ma info o sanepidzie w swoim runbooku — poprawnie
+  rozpoznał brak dopasowania kontekstu, ale na złym etapie (powinno było
+  eskalować już na etapie gate, nie dopiero w odpowiedzi LLM-a). To pokazuje
+  granicę obecnego klasyfikatora (65% accuracy, Tydzień 3) w praktyce, nie
+  tylko w ewaluacji offline.
+  **Możliwe kierunki poprawy (nieuzasadnione jeszcze na tym etapie):**
+  więcej przykładów na kategorię, wyższy próg confidence, albo prosty
+  post-check w subagencie ("czy kontekst faktycznie odpowiada na pytanie,
+  czy zgłosić brak dopasowania zamiast zgadywać") jako dodatkowa siatka
+  bezpieczeństwa nad samym gate.
+
 ## Szablon na kolejne tygodnie
 
 ```

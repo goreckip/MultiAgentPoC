@@ -17,15 +17,15 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 
 ## Warstwy architektury (docelowo)
 
-1. Klasyfikacja intencji (9 kategorii: 8 procesowych + `inne`)
-2. Confidence gate (próg pewności → auto-odpowiedź vs. eskalacja)
-3. RAG nad runbookami (Chroma + Ollama)
-4. Subagenci per kategoria procesu, koordynowani przez agenta-router (LangGraph)
-5. Walidacja danych wejściowych (dane wrażliwe, format numeru zamówienia, uprawnienia)
-6. Human-in-the-loop (kolejka zatwierdzeń dla eskalacji, `interrupt()` w LangGraph)
-7. Observability (Langfuse Cloud, free tier)
+1. Klasyfikacja intencji (9 kategorii: 8 procesowych + `inne`) — ✅
+2. Confidence gate (próg pewności → auto-odpowiedź vs. eskalacja) — ✅
+3. RAG nad runbookami (Chroma + Ollama) — ✅
+4. Subagenci per kategoria procesu, koordynowani przez agenta-router (LangGraph) — ✅
+5. Walidacja danych wejściowych (dane wrażliwe, format numeru zamówienia, uprawnienia, załącznik PDF + skan AV) — ✅
+6. Human-in-the-loop (`interrupt()` w LangGraph) — 🚧 mechanizm działa, brak trwałej kolejki/UI
+7. Observability (Langfuse Cloud, free tier) — ⬜
 
-## Co istnieje dzisiaj (2026-08-19, po Tygodniu 2)
+## Co istnieje dzisiaj (2026-08-19, po Tygodniu 4)
 
 ### Zaimplementowane i przetestowane
 
@@ -49,19 +49,21 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Parser PDF | [`src/multiagent_poc/validation/attachment.py`](../src/multiagent_poc/validation/attachment.py) | Ekstrakcja tekstu (pypdf), tylko warstwa tekstowa, bez OCR. |
 | Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik: reklasyfikacja z treścią PDF tylko gdy pytanie samo w sobie miało zbyt niską pewność. Zastępczo za graf LangGraph do czasu Tygodnia 4/2. |
 | Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
+| Walidacja danych wejściowych | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) | PESEL (regex + suma kontrolna), prompt injection, prośby o dane osób trzecich → twardy odrzut; zły format numeru zamówienia → flaga, nie blokada. |
+| Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja z Tygodnia 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
+| Graf LangGraph (routing + HITL) | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) | Spina walidację+klasyfikację+gate+załącznik (`classification/pipeline.py`) z subagentem albo węzłem eskalacji przez `interrupt()`/`Command(resume=...)`, z `MemorySaver` jako checkpointerem. |
+| Demo grafu end-to-end (na żywo) | [`scripts/demo_graph.py`](../scripts/demo_graph.py) | Trzy realne przypadki: auto-odpowiedź, odrzucenie walidacji, eskalacja z pauzą i wznowieniem HITL. |
 
-**Zweryfikowane działanie:** `pytest` (4/4 testy), realna indeksacja do Chroma i
-realny retrieval przez Ollama (`llama3.1:8b` + `nomic-embed-text`) — patrz wpis
-"Tydzień 2 — dokończenie" w `decision_log.md`.
+**Zweryfikowane działanie:** `pytest` (32/32 testy), pełny graf na żywo
+(auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
+patrz wpisy "Tydzień 3" i "Tydzień 4" w `decision_log.md`, w tym uczciwie
+odnotowane znane ograniczenie klasyfikatora ujawnione w live demo grafu.
 
 ### Zaplanowane, jeszcze puste
 
 | Moduł | Plik | Odpowiada za warstwę |
 |---|---|---|
-| Subagenci | `src/multiagent_poc/agents/` | 4 |
-| Graf/routing (spięcie klasyfikatora + gate + RAG w jeden pipeline) | `src/multiagent_poc/graph/` | 2, 4 |
-| Walidacja | `src/multiagent_poc/validation/` | 5 |
-| HITL | `src/multiagent_poc/hitl/` | 6 |
+| HITL — trwała kolejka + UI | `src/multiagent_poc/hitl/` | 6 |
 
 Streamlit UI i integracja Langfuse jeszcze nie mają nawet szkieletu plików —
 patrz `requirements.md` po pełny status.

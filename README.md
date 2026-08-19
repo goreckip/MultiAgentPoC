@@ -62,13 +62,16 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 4 (część 1): RAG, klasyfikacja intencji + confidence gate oraz
-załącznik PDF (skan AV + reklasyfikacja przy niskiej pewności) gotowe i
-zweryfikowane na żywych danych — patrz realny przykład w
-[`docs/decision_log.md`](docs/decision_log.md) (pytanie o lodówkę: bez
-załącznika eskalacja, z załącznikiem confidence 0.33 → 0.67). Następny krok:
-spięcie wszystkiego w jeden graf LangGraph + subagenci per kategoria + HITL.
-Pełny status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
+Po Tygodniu 4: warstwy 1-5 kompletne i spięte w jeden graf LangGraph —
+walidacja → klasyfikacja intencji + confidence gate (opcjonalnie wspomagana
+załącznikiem PDF) → subagent per kategoria (RAG filtrowany do właściwego
+runbooka) albo eskalacja do człowieka przez `interrupt()`/`resume`.
+Zweryfikowane na żywo end-to-end (`scripts/demo_graph.py`), łącznie z
+uczciwie udokumentowanym, realnym przypadkiem błędnej klasyfikacji ujawnionym
+w tym demo — patrz [`docs/decision_log.md`](docs/decision_log.md). Zostało:
+Langfuse, Streamlit UI (w tym panel HITL), trwała kolejka HITL, framework
+ewaluacyjny. Pełny status per wymaganie — patrz
+[`docs/requirements.md`](docs/requirements.md).
 
 ## Setup (dev)
 

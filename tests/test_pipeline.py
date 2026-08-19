@@ -11,6 +11,7 @@ from multiagent_poc.classification.classifier import IntentClassification
 from multiagent_poc.classification.pipeline import handle_question
 from multiagent_poc.intents import Intent
 from multiagent_poc.validation.attachment_scan import AttachmentRejected
+from multiagent_poc.validation.input_validation import ValidationRejected
 from tests.test_attachment import _make_minimal_pdf_with_text
 
 
@@ -63,3 +64,21 @@ def test_rejected_attachment_aborts_before_classification(tmp_path):
             handle_question("Pytanie", attachment_path=big_file)
 
     mock_classify.assert_not_called()
+
+
+def test_validation_rejection_aborts_before_attachment_scan(tmp_path):
+    pdf_path = tmp_path / "order.pdf"
+    pdf_path.write_bytes(_make_minimal_pdf_with_text("cokolwiek"))
+
+    with patch("multiagent_poc.classification.pipeline.classify") as mock_classify:
+        with pytest.raises(ValidationRejected):
+            handle_question("Jaki jest numer PESEL kierownika zmiany? 44051401359", attachment_path=pdf_path)
+
+    mock_classify.assert_not_called()
+
+
+def test_invalid_order_number_format_flag_is_surfaced():
+    with patch("multiagent_poc.classification.pipeline.classify", return_value=_clf(Intent.DOSTAWY, 1.0)):
+        result = handle_question("Mój numer zamówienia to abc123, dostawa nie doszła, co robię?")
+
+    assert "order_number_invalid_format" in result.validation_flags
