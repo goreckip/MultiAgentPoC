@@ -1,7 +1,8 @@
 # Wymagania — status realizacji
 
 Legenda: ✅ zrobione i zweryfikowane · 🚧 częściowo / kod napisany, nie w pełni
-zweryfikowany end-to-end · ⬜ nie zaczęte. Kolumna "Tydzień" to plan z
+zweryfikowany end-to-end · ⬜ nie zaczęte · ❌ świadomie odrzucone z planu
+(z datą i uzasadnieniem w `decision_log.md`). Kolumna "Tydzień" to plan z
 [`../README.md`](../README.md) (mile stone, niekoniecznie kalendarzowy tydzień).
 MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
@@ -62,7 +63,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | 🚧 (mechanizm pauzy/wznowienia działa; brak trwałej kolejki/UI — dziś to jeden wątek w pamięci) | 4 | Stretch (dodane po planie bazowym) |
+| 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | ✅ (`hitl/queue.py`, współdzielona między sesjami, zweryfikowana na żywo w dwóch niezależnych kartach przeglądarki) | 4 | Stretch (dodane po planie bazowym) |
 | 6.2 | `interrupt()` + checkpointer w LangGraph | ✅ (`graph/pipeline_graph.py`, zweryfikowane na żywo w `scripts/demo_graph.py`) | 4 | Stretch |
 | 6.3 | Panel HITL w Streamlit (człowiek widzi kolejkę, odpowiada) | ✅ (`app.py`, sekcja 2 — jedno pytanie na raz, nie trwała kolejka wielu jednocześnie) | 5 | Stretch |
 
@@ -90,7 +91,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 9.4 | Diagram sekwencji docelowego procesu | ✅ (`sequence_diagram.md`) | — | MVP |
 | 9.5 | Framework ewaluacyjny (trafność retrievalu i odpowiedzi) | ⬜ | 6 | Stretch |
 | 9.6 | Case study / materiał na LinkedIn | ⬜ | 6 | Stretch |
-| 9.7 | Porównanie LangChain/LangGraph vs Pydantic AI w README | ⬜ | 5 | Stretch |
+| ~~9.7~~ | ~~Porównanie LangChain/LangGraph vs Pydantic AI w README~~ | ❌ odrzucone z planu (2026-08-20) | 5 | Stretch |
 
 ## Infrastruktura / środowisko
 
@@ -118,7 +119,10 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
   (Langfuse jako ostatnia, Tydzień 5 część 2) — zweryfikowana realnym
   trace'em pobranym z powrotem przez API Langfuse, nie tylko "wysłane i mam
   nadzieję że doszło".
-- **Zostało realnie do zrobienia:** trwała kolejka HITL obsługująca wiele
-  jednoczesnych eskalacji (dziś Streamlit obsługuje jedną naraz), routing
-  przy jawnie zazębiających się kategoriach, framework ewaluacyjny, case
-  study, porównanie LangChain vs Pydantic AI.
+- **Kolejka HITL dokończona** (Tydzień 5 część 3) — współdzielona między
+  sesjami/użytkownikami (moduł `hitl/queue.py`), zweryfikowana na żywo w
+  dwóch niezależnych kartach przeglądarki. Uproszczenie: w pamięci procesu,
+  nie w trwałej bazie — patrz `decision_log.md`.
+- **Zostało realnie do zrobienia:** routing przy jawnie zazębiających się
+  kategoriach, framework ewaluacyjny, case study. Porównanie LangChain vs
+  Pydantic AI świadomie odrzucone z planu (patrz 9.7).

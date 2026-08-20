@@ -392,6 +392,60 @@ etapie, surowy materiał pod przyszłe STAR.
   zaakceptowane — łączenie ich w jeden trace przez współdzielony
   `trace_context` to możliwe rozszerzenie, nieuzasadnione na tym etapie.
 
+## Rozszerzenie planu — 2026-08-20
+
+- **Decyzja:** odrzucone z planu — porównanie LangChain/LangGraph vs
+  Pydantic AI w README (punkt 9.7).
+  **Dlaczego:** świadoma decyzja użytkownika, żeby skupić czas na
+  dokończeniu trwałej kolejki HITL zamiast pisania porównania frameworków,
+  którego nigdy praktycznie nie przetestowano (projekt od początku
+  konsekwentnie używał LangGraph, Pydantic AI nie zostało nawet
+  zaimplementowane jako alternatywa) — porównanie byłoby więc bardziej
+  spekulacją niż realnym wnioskiem z doświadczenia.
+  **Efekt:** oznaczone jako ❌ w `requirements.md`, nie usunięte z historii
+  (żeby było widać, że była to świadoma decyzja, nie przeoczenie).
+
+## Tydzień 5 (część 3) — trwała kolejka HITL — 2026-08-20
+
+- **Decyzja:** kolejka HITL jako moduł-poziomowy rejestr w pamięci procesu
+  (`hitl/queue.py`, słowniki `dict` chronione `threading.Lock`), nie
+  zewnętrzna baza (Redis/Postgres).
+  **Dlaczego:** Streamlit domyślnie uruchamia się jako jeden proces, a różne
+  sesje przeglądarki (różne karty/użytkownicy) działają jako wątki w tym
+  samym procesie — moduł-poziomowy stan współdzielony jest więc faktycznie
+  widoczny między "różnymi użytkownikami" bez żadnej infrastruktury. Ta sama
+  klasa uproszczenia co `MemorySaver` (checkpointer LangGraph) — stan nie
+  przetrwa restartu procesu. W realnym wdrożeniu wymagałoby to zewnętrznego
+  store'a, żeby przetrwać restart i działać przy wielu instancjach appki —
+  świadomie poza zakresem PoC.
+  **Efekt:** `tests/test_hitl_queue.py` (5 testów, logika kolejki bez
+  Ollamy/Streamlit) + weryfikacja na żywo w przeglądarce z **dwiema
+  niezależnymi kartami** (symulacja dwóch różnych użytkowników): pytanie
+  zadane w karcie 1 (pracownik) pojawiło się w kolejce widocznej w karcie 2
+  (operator, z pustą własną historią — dowód, że to nie był podgląd danych
+  tej samej sesji), operator odpowiedział z karty 2, a karta 1 dostała
+  odpowiedź po kliknięciu "Sprawdź, czy jest odpowiedź".
+
+- **Decyzja:** jeden `thread_id` per pytanie (generowany świeżo przy każdym
+  submit), nie jeden `thread_id` per sesja przeglądarki (jak w poprzedniej
+  wersji `app.py`).
+  **Dlaczego:** stary model (jeden trwały `thread_id` na całą sesję) zakładał
+  po cichu, że pracownik zada tylko jedno pytanie na raz — reużycie tego
+  samego wątku LangGraph dla drugiego pytania, zanim pierwsze zostało
+  rozwiązane, kolidowałoby ze stanem grafu wciąż wstrzymanym na
+  `interrupt()` dla pierwszego pytania. Osobny wątek na pytanie eliminuje to
+  ryzyko i naturalnie mapuje się na semantykę kolejki (każda eskalacja to
+  osobny, niezależnie śledzony wpis).
+  **Efekt:** panel pracownika nadal ogranicza się do jednego oczekującego
+  pytania naraz (świadome uproszczenie UI, nie ograniczenie architektury) —
+  ale kolejka po stronie operatora poprawnie obsługuje dowolnie wiele
+  jednoczesnych eskalacji od różnych pracowników.
+
+- **Decyzja (odrzucona z planu):** porównanie LangChain/LangGraph vs
+  Pydantic AI w README — usunięte na prośbę użytkownika, na rzecz
+  dokończenia kolejki HITL. Uzasadnienie: patrz sekcja "Rozszerzenie planu"
+  wyżej.
+
 ## Szablon na kolejne tygodnie
 
 ```
