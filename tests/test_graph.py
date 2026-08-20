@@ -39,7 +39,7 @@ def test_auto_answer_route():
         return_value=_pipeline_result(Intent.DOSTAWY, 1.0, escalate=False),
     ), patch(
         "multiagent_poc.graph.pipeline_graph.agent_answer",
-        return_value=AgentAnswer(text="magazynuj oddzielnie", sources=["01_dostawy.md"]),
+        return_value=AgentAnswer(text="magazynuj oddzielnie", sources=["01_dostawy.md"], chunks=[]),
     ):
         result = graph.invoke({"question": "cokolwiek"}, config=_config())
 

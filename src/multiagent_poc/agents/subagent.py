@@ -38,6 +38,7 @@ AGENT_PROMPT_ADDENDUM: dict[Intent, str] = {
 class AgentAnswer:
     text: str
     sources: list[str]
+    chunks: list[RetrievedChunk]
 
 
 def _embeddings() -> OllamaEmbeddings:
@@ -74,4 +75,4 @@ def answer(question: str, intent: Intent, client: chromadb.ClientAPI | None = No
         config={"callbacks": [get_callback_handler()]},
     )
 
-    return AgentAnswer(text=response.content, sources=sorted({c.source for c in chunks}))
+    return AgentAnswer(text=response.content, sources=sorted({c.source for c in chunks}), chunks=chunks)

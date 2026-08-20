@@ -25,7 +25,7 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 6. Human-in-the-loop (`interrupt()` w LangGraph + współdzielona kolejka) — ✅
 7. Observability (Langfuse Cloud, free tier) — ✅
 
-## Co istnieje dzisiaj (2026-08-20, po Tygodniu 5 część 3)
+## Co istnieje dzisiaj (2026-08-20, po Tygodniu 6)
 
 ### Zaimplementowane i przetestowane
 
@@ -57,8 +57,11 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Observability (Langfuse) | [`src/multiagent_poc/observability/langfuse_client.py`](../src/multiagent_poc/observability/langfuse_client.py) | `@observe()` na kluczowych funkcjach (walidacja, klasyfikacja, gate, subagent) tworzy zagnieżdżone spany; `CallbackHandler` przekazany do `ChatOllama.invoke()` łapie model/tokeny/latencję generacji jako observation typu `GENERATION`. |
 | Root trace grafu | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`invoke_graph`) | Jedyny punkt wejścia do `graph.invoke()`/`Command(resume=...)` w `app.py` i `scripts/demo_graph.py` — daje jeden trace na całe pytanie zamiast osobnych trace'ów per węzeł. |
 | Kolejka HITL | [`src/multiagent_poc/hitl/queue.py`](../src/multiagent_poc/hitl/queue.py) | Rejestr pending/resolved eskalacji współdzielony między sesjami Streamlit (moduł-poziomowy stan procesu, `threading.Lock`) — operator widzi eskalacje od wszystkich pracowników, nie tylko z własnej sesji. |
+| Ground truth RAG | [`src/multiagent_poc/evaluation/rag_eval_set.py`](../src/multiagent_poc/evaluation/rag_eval_set.py) | Oczekiwane źródło/sekcja/słowa kluczowe dla 15 pytań, wyprowadzone ręcznie z treści wszystkich 8 runbooków. |
+| LLM-as-judge | [`src/multiagent_poc/evaluation/judge.py`](../src/multiagent_poc/evaluation/judge.py) | Ocena 1-5 przez `llama3.1:8b` wg rubryki — z jawnie odnotowanym ograniczeniem (ten sam model ocenia własną rodzinę odpowiedzi). |
+| Framework ewaluacyjny (RAG) | [`scripts/evaluate_rag.py`](../scripts/evaluate_rag.py) | Trzy niezależne sygnały (retrieval hit-rate, pokrycie słów kluczowych, LLM-judge) na 15 pytaniach, z pominięciem klasyfikatora (izolacja jakości RAG). Realny wynik: 86% / 38% / 4.67/5 — rozbieżność między sygnałami ujawniła konkretny błąd retrievalu niewidoczny dla samego LLM-judge, patrz decision log. |
 
-**Zweryfikowane działanie:** `pytest` (37/37 testów), pełny graf na żywo
+**Zweryfikowane działanie:** `pytest` (42/42 testy), pełny graf na żywo
 (auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
 patrz wpisy "Tydzień 3", "Tydzień 4" i "Tydzień 5" w `decision_log.md`, w tym
 uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live demo

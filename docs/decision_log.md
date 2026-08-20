@@ -446,6 +446,58 @@ etapie, surowy materiał pod przyszłe STAR.
   dokończenia kolejki HITL. Uzasadnienie: patrz sekcja "Rozszerzenie planu"
   wyżej.
 
+## Tydzień 6 — framework ewaluacyjny (RAG + jakość odpowiedzi) — 2026-08-20
+
+- **Decyzja:** trzy niezależne sygnały jakości zamiast jednego (retrieval
+  hit-rate, pokrycie słów kluczowych, LLM-as-judge 1-5), świadomie
+  zaimplementowane jako osobny skrypt (`scripts/evaluate_rag.py`), nie
+  integracja z Langfuse Datasets — spójne z `evaluate_classifier.py`, zero
+  nowej koncepcji do nauczenia się na tym etapie (świadomy wybór użytkownika
+  z dwóch przedstawionych opcji).
+  **Dlaczego trzy sygnały:** każdy łapie inny rodzaj błędu — hit-rate mówi,
+  czy RAG w ogóle sięgnął po właściwy fragment; keywords to tani,
+  deterministyczny, ale sztywny wobec parafraz sygnał regresyjny;
+  LLM-judge łapie parafrazy, ale to ten sam lokalny `llama3.1:8b`, który
+  generował odpowiedzi — sędzia oceniający własną rodzinę modelu jest
+  z założenia podejrzany o łagodność/niespójność (odnotowane wprost w
+  `evaluation/judge.py`, nie ukryte).
+  **Decyzja metodologiczna:** ewaluacja RAG bypasuje klasyfikator —
+  `agents.subagent.answer()` wywoływane z **poprawną, przypiętą z góry**
+  intencją (`evaluation/rag_eval_set.py`, ground truth wyprowadzone ręcznie z
+  treści wszystkich 8 runbooków, nie zgadywane). Cel: izolacja jakości
+  RAG+generacji od jakości klasyfikatora, już zmierzonej osobno w Tygodniu 3
+  — inaczej błąd klasyfikatora zaszumiałby wynik ewaluacji RAG.
+
+- **Efekt — realny przebieg na 15 pytaniach (`scripts/evaluate_rag.py`):**
+  - Retrieval hit-rate: **12/14 (86%)** (2 pytania bez ground truth sekcji,
+    celowo pominięte w tej metryce — patrz `note` w `rag_eval_set.py`).
+  - Pokrycie słów kluczowych: **38%** (średnio).
+  - LLM-judge: **4.67/5** (średnio).
+  - **Rozbieżność między metrykami jest sama w sobie wynikiem, nie szumem:**
+    wiele odpowiedzi dostało 0% pokrycia słów kluczowych mimo oceny 5/5 od
+    sędziego — bo model parafrazował poprawnie zamiast cytować dosłownie
+    (np. "gotówką" zamiast oczekiwanego dokładnego brzmienia). Potwierdza to
+    wprost przewidzianą wcześniej wadę keyword-matchingu (sztywność wobec
+    parafraz).
+  - **Złapany realny przypadek zawodności LLM-as-judge:** pytanie "Kiedy
+    dostanę wypłatę za nadgodziny z zeszłego miesiąca?" — subagent poprawnie
+    odesłał pracownika do działu kadr (zgodnie z sekcją 6 runbooka HR), ale
+    sędzia ocenił to na **1/5** jako "całkowicie błędne", z uzasadnieniem
+    które samo sobie przeczy (przyznaje, że procedura każe odsyłać do HR, a
+    mimo to ocenia odpowiedź jako błędną). Klasyczny przykład niespójności
+    tego samego modelu oceniającego własne rodzinne odpowiedzi.
+  - **Złapany realny przypadek błędu retrievalu ukrytego przez przekonujący
+    ton:** pytanie "Czy mogę zamienić się zmianą z kolegą bez zgłaszania
+    kierownikowi?" pobrało fragment o **nadgodzinach** (sekcja 5) zamiast o
+    **zmianie grafiku** (sekcja 2) — odpowiedź brzmi przekonująco i
+    proceduralnie poprawnie, ale odpowiada na inne pytanie niż zadane.
+    LLM-judge tego nie wyłapał (5/5), keyword-matching owszem (0% — trafnie
+    zasygnalizował problem, choć "z przypadku", nie ze zrozumienia treści).
+    **Wniosek:** żaden pojedynczy sygnał osobno by tego nie ujawnił —
+    dopiero zestawienie retrieval hit-rate (MISS) z wysoką oceną sędziego
+    (5/5) obnaża lukę. To najsilniejszy argument za utrzymaniem wielu
+    niezależnych sygnałów zamiast jednej "zbiorczej" metryki.
+
 ## Szablon na kolejne tygodnie
 
 ```

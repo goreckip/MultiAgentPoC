@@ -68,7 +68,7 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 5: wszystkie 7 warstw architektury mają działającą implementację,
+Po Tygodniu 6: wszystkie 7 warstw architektury mają działającą implementację,
 zweryfikowaną na żywo, nie tylko testami z mockami. Walidacja → klasyfikacja
 intencji + confidence gate (opcjonalnie wspomagana załącznikiem PDF) →
 subagent per kategoria (RAG filtrowany do właściwego runbooka) albo
@@ -77,8 +77,12 @@ kolejki HITL w Streamlit ([`app.py`](app.py)) — zweryfikowanej w dwóch
 niezależnych kartach przeglądarki (operator widzi eskalacje od innych
 pracowników, nie tylko własne). Każde pytanie generuje zagnieżdżony trace w
 Langfuse Cloud (model, tokeny, latencja, koszt), pobrany z powrotem przez API
-jako dowód, że dotarł. Zostało: framework ewaluacyjny, case study. Pełny
-status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
+jako dowód, że dotarł. Framework ewaluacyjny (`scripts/evaluate_rag.py`)
+zmierzył trafność RAG na trzech niezależnych sygnałach (retrieval hit-rate
+86%, pokrycie słów kluczowych 38%, LLM-judge 4.67/5) i ujawnił konkretny
+przypadek błędu retrievalu ukrytego przez przekonujący ton odpowiedzi —
+patrz [`docs/decision_log.md`](docs/decision_log.md). Zostało: case study.
+Pełny status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
 
 ## Uruchomienie UI
 

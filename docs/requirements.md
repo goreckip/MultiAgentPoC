@@ -89,7 +89,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 9.2 | Log decyzji prowadzony na bieżąco | ✅ (aktualizowany co sesję) | ciągłe | MVP |
 | 9.3 | Dokumentacja architektury | ✅ (ten zestaw dokumentów) | — | MVP |
 | 9.4 | Diagram sekwencji docelowego procesu | ✅ (`sequence_diagram.md`) | — | MVP |
-| 9.5 | Framework ewaluacyjny (trafność retrievalu i odpowiedzi) | ⬜ | 6 | Stretch |
+| 9.5 | Framework ewaluacyjny (trafność retrievalu i odpowiedzi) | ✅ (`scripts/evaluate_rag.py` — retrieval hit-rate 86%, keywords 38%, LLM-judge 4.67/5; rozbieżność metryk uczciwie przeanalizowana w `decision_log.md`) | 6 | Stretch |
 | 9.6 | Case study / materiał na LinkedIn | ⬜ | 6 | Stretch |
 | ~~9.7~~ | ~~Porównanie LangChain/LangGraph vs Pydantic AI w README~~ | ❌ odrzucone z planu (2026-08-20) | 5 | Stretch |
 
@@ -123,6 +123,11 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
   sesjami/użytkownikami (moduł `hitl/queue.py`), zweryfikowana na żywo w
   dwóch niezależnych kartach przeglądarki. Uproszczenie: w pamięci procesu,
   nie w trwałej bazie — patrz `decision_log.md`.
+- **Framework ewaluacyjny dokończony** (Tydzień 6) — trzy niezależne sygnały
+  (retrieval hit-rate, keywords, LLM-judge) na 15 pytaniach, ground truth
+  wyprowadzone ręcznie z treści wszystkich runbooków. Realny wynik ujawnił
+  konkretny przypadek błędu retrievalu ukrytego przez przekonujący ton
+  odpowiedzi, niewidoczny dla samego LLM-judge — patrz `decision_log.md`.
 - **Zostało realnie do zrobienia:** routing przy jawnie zazębiających się
-  kategoriach, framework ewaluacyjny, case study. Porównanie LangChain vs
-  Pydantic AI świadomie odrzucone z planu (patrz 9.7).
+  kategoriach, case study. Porównanie LangChain vs Pydantic AI świadomie
+  odrzucone z planu (patrz 9.7).
