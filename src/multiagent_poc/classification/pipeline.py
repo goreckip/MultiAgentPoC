@@ -20,6 +20,7 @@ from pathlib import Path
 
 from multiagent_poc.classification.classifier import classify
 from multiagent_poc.classification.gate import GateDecision, decide
+from multiagent_poc.observability.langfuse_client import observe
 from multiagent_poc.validation.attachment import parse_pdf_text
 from multiagent_poc.validation.attachment_scan import scan_file
 from multiagent_poc.validation.input_validation import ValidationRejected, validate_input
@@ -32,6 +33,7 @@ class PipelineResult:
     validation_flags: list[str]
 
 
+@observe(name="handle_question")
 def handle_question(question: str, attachment_path: Path | None = None) -> PipelineResult:
     validation = validate_input(question)
     if not validation.allowed:

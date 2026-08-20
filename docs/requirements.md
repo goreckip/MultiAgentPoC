@@ -70,7 +70,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 | # | Wymaganie | Status | Tydzień | Zakres |
 |---|---|---|---|---|
-| 7.1 | Integracja z Langfuse Cloud (traces, koszty, latencja) | ⬜ | 4 | Stretch |
+| 7.1 | Integracja z Langfuse Cloud (traces, koszty, latencja) | ✅ (`observability/langfuse_client.py`, zweryfikowane realnym trace'em przez API — patrz `decision_log.md`) | 4 | Stretch |
 | 7.2 | Konfiguracja gotowa (klucze w `.env.example`, host cloud) | ✅ | 2 | — |
 
 ## Warstwa 8 — UI i polish
@@ -114,8 +114,11 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
   udokumentowane w `decision_log.md`, nie ukryte. Pytania bezpieczeństwa
   (dane wrażliwe/prompt injection/spoza katalogu) nadal 100% poprawnie
   odrzucane/eskalowane.
-- **Zostało realnie do zrobienia:** Langfuse (obserwowalność — czeka na
-  założenie konta przez użytkownika), trwała kolejka HITL obsługująca wiele
+- **Wszystkie 7 warstw architektury mają teraz działającą implementację**
+  (Langfuse jako ostatnia, Tydzień 5 część 2) — zweryfikowana realnym
+  trace'em pobranym z powrotem przez API Langfuse, nie tylko "wysłane i mam
+  nadzieję że doszło".
+- **Zostało realnie do zrobienia:** trwała kolejka HITL obsługująca wiele
   jednoczesnych eskalacji (dziś Streamlit obsługuje jedną naraz), routing
   przy jawnie zazębiających się kategoriach, framework ewaluacyjny, case
   study, porównanie LangChain vs Pydantic AI.

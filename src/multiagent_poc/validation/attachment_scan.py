@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 
 from multiagent_poc.config import settings
+from multiagent_poc.observability.langfuse_client import observe
 
 # clamscan exit codes: 0 = no virus found, 1 = virus(es) found, 2 = an error occurred
 CLEAN, INFECTED, SCAN_ERROR = 0, 1, 2
@@ -28,6 +29,7 @@ class ScanResult:
     detail: str
 
 
+@observe(name="attachment_malware_scan")
 def scan_file(path: Path, timeout_seconds: int = 120) -> ScanResult:
     if not path.exists():
         raise AttachmentRejected(f"attachment not found: {path}")

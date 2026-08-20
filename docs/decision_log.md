@@ -346,6 +346,52 @@ etapie, surowy materiał pod przyszłe STAR.
   z opisem etapu), ale warte odnotowania jako realne ograniczenie przy
   ewentualnym demo na żywo — GPU albo mniejszy model skróciłyby to znacząco.
 
+## Tydzień 5 (część 2) — Langfuse Cloud (observability) — 2026-08-20
+
+- **Decyzja:** konto Langfuse Cloud (region EU, `cloud.langfuse.com`) założone
+  przez użytkownika (nie przeze mnie — zakładanie kont to poza tym, co robię
+  automatycznie), klucze API wklejone bezpośrednio do lokalnego `.env`
+  (gitignored). Zweryfikowane `auth_check()` przed pisaniem integracji.
+  **Efekt:** `settings.langfuse_*` w `config.py` już istniały z Tygodnia 2 —
+  wystarczyło dodać wartości do `.env`.
+
+- **Decyzja:** dwa mechanizmy naraz zamiast jednego — dekorator `@observe()`
+  (Langfuse SDK v3, oparty o OpenTelemetry + contextvars) na kluczowych
+  funkcjach (`validate_input`, `classify`, `decide`, `subagent.answer`,
+  `handle_question`, `scan_file`) DO tworzenia zagnieżdżonych spanów, plus
+  jawnie przekazywany `CallbackHandler` z `langfuse.langchain` do wywołań
+  `ChatOllama.invoke(..., config={"callbacks": [...]})` DO wyciągnięcia
+  tokenów/kosztu/modelu z samej generacji LLM.
+  **Dlaczego:** `@observe()` samo w sobie łapie input/output i czas
+  wykonania dowolnej funkcji, ale nie rozumie, że dana funkcja "jest"
+  wywołaniem LLM — nie wyciągnie liczby tokenów ani nazwy modelu z
+  surowego zwracanego stringa. `CallbackHandler` z kolei rozumie strukturę
+  odpowiedzi LangChain (`ChatOllama`) i tworzy dedykowany observation typu
+  `GENERATION` z tymi danymi. Osobno każdy z nich dawałby niepełny obraz.
+  **Efekt (zweryfikowane realnym trace'em przez `lf.api.trace.get(...)`):**
+  jeden trace `handle_user_turn` (nowy wrapper `graph/pipeline_graph.py::invoke_graph`,
+  wywoływany zamiast gołego `graph.invoke()` w `app.py` i `scripts/demo_graph.py`)
+  zawiera zagnieżdżone spany `handle_question` → `validate_input` +
+  `classify_intent` + `confidence_gate` → `subagent_answer` → observation
+  `GENERATION` (`ChatOllama`) z `model=llama3.1:8b`, `usage: input=672
+  output=33 total=705 TOKENS`, `latency=85.48s`. Koszt (`*_cost`) wyszedł
+  `None` — oczekiwane, model lokalny przez Ollama nie ma wpisu w cenniku
+  Langfuse, ale tokeny i latencja i tak dają realną wartość obserwowalności.
+
+- **Decyzja:** `invoke_graph()` jako jedyny punkt wejścia do grafu (zamiast
+  dekorowania samych węzłów LangGraph), żeby dostać jeden trace na całe
+  wywołanie zamiast osobnego trace'a per węzeł.
+  **Dlaczego:** kontekst trace'a propaguje się przez contextvars przez cały
+  synchroniczny stos wywołań — opakowanie punktu wejścia jedną dekorowaną
+  funkcją wystarczyło, żeby wszystko wewnątrz (łącznie z wywołaniami przez
+  LangGraph) zagnieździło się automatycznie, bez ręcznego przekazywania
+  kontekstu trace'a do każdego węzła z osobna.
+  **Znane uproszczenie:** przy eskalacji HITL, wznowienie (`Command(resume=...)`)
+  to osobne wywołanie `invoke_graph()`, więc pytanie eskalowane dostaje
+  **dwa** trace'y (przed pauzą i po wznowieniu), nie jeden ciągły. Świadomie
+  zaakceptowane — łączenie ich w jeden trace przez współdzielony
+  `trace_context` to możliwe rozszerzenie, nieuzasadnione na tym etapie.
+
 ## Szablon na kolejne tygodnie
 
 ```

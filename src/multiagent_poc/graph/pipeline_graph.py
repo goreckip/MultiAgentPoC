@@ -19,6 +19,7 @@ from multiagent_poc.agents.subagent import answer as agent_answer
 from multiagent_poc.classification.pipeline import handle_question
 from multiagent_poc.graph.state import GraphState
 from multiagent_poc.intents import Intent
+from multiagent_poc.observability.langfuse_client import observe
 from multiagent_poc.validation.attachment_scan import AttachmentRejected
 from multiagent_poc.validation.input_validation import ValidationRejected
 
@@ -81,3 +82,14 @@ def build_graph():
     graph.add_edge("rejected", END)
 
     return graph.compile(checkpointer=MemorySaver())
+
+
+@observe(name="handle_user_turn")
+def invoke_graph(graph, inputs, config: dict) -> dict:
+    """Thin wrapper that gives every graph.invoke() call (a fresh question or
+    a Command(resume=...) after HITL) its own Langfuse trace, with everything
+    called underneath (validation, classification, gate, subagent, malware
+    scan) nesting into it automatically via @observe's contextvar propagation
+    — as long as the graph runs synchronously in this thread, which it does.
+    """
+    return graph.invoke(inputs, config=config)

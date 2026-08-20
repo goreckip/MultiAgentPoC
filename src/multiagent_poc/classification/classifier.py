@@ -17,6 +17,7 @@ from langchain_ollama import OllamaEmbeddings
 from multiagent_poc.classification.exemplars import INTENT_EXEMPLARS
 from multiagent_poc.config import settings
 from multiagent_poc.intents import Intent
+from multiagent_poc.observability.langfuse_client import observe
 
 COLLECTION_EXEMPLARS = "intent_exemplars"
 
@@ -53,6 +54,7 @@ def build_exemplar_index(client: chromadb.ClientAPI | None = None) -> chromadb.C
     return client
 
 
+@observe(name="classify_intent")
 def classify(
     question: str,
     client: chromadb.ClientAPI | None = None,

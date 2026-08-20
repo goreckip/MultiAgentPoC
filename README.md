@@ -32,6 +32,9 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
    zanim pójdzie do użytkownika. Zaimplementowane przez `interrupt()` + checkpointer
    w LangGraph — graf zatrzymuje się na węźle i czeka na input człowieka.
 7. **Observability** — Langfuse Cloud (free tier), zamiast self-hosted Dockera.
+   Zagnieżdżone trace'y (walidacja → klasyfikacja → gate → subagent →
+   generacja LLM z tokenami/latencją) — patrz
+   [`src/multiagent_poc/observability/langfuse_client.py`](src/multiagent_poc/observability/langfuse_client.py).
 
 ## Struktura repo
 
@@ -49,6 +52,7 @@ src/multiagent_poc/
   agents/             — subagenci per kategoria
   graph/              — graf LangGraph (routing, confidence gate, HITL interrupt)
   validation/         — walidacja danych wejściowych, skan AV i parser PDF załącznika
+  observability/      — integracja Langfuse (@observe, CallbackHandler)
   hitl/               — kolejka zatwierdzeń, integracja z Streamlit UI
 tests/
 data/chroma/          — lokalny wektorowy store (gitignored)
@@ -63,17 +67,16 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 5 (część 1): warstwy 1-5 kompletne i spięte w jeden graf
-LangGraph, z działającym UI — walidacja → klasyfikacja intencji + confidence
-gate (opcjonalnie wspomagana załącznikiem PDF) → subagent per kategoria (RAG
-filtrowany do właściwego runbooka) albo eskalacja do człowieka przez
-`interrupt()`/`resume`, obsługiwana w panelu HITL w Streamlit
-([`app.py`](app.py)). Zweryfikowane na żywo end-to-end w przeglądarce, łącznie
-z uczciwie udokumentowanym, realnym przypadkiem błędnej klasyfikacji — patrz
-[`docs/decision_log.md`](docs/decision_log.md). Zostało: Langfuse (czeka na
-konto), trwała kolejka HITL dla wielu jednoczesnych eskalacji, framework
-ewaluacyjny. Pełny status per wymaganie — patrz
-[`docs/requirements.md`](docs/requirements.md).
+Po Tygodniu 5: wszystkie 7 warstw architektury mają działającą implementację.
+Walidacja → klasyfikacja intencji + confidence gate (opcjonalnie wspomagana
+załącznikiem PDF) → subagent per kategoria (RAG filtrowany do właściwego
+runbooka) albo eskalacja do człowieka przez `interrupt()`/`resume` w panelu
+HITL w Streamlit ([`app.py`](app.py)), a każde pytanie generuje zagnieżdżony
+trace w Langfuse Cloud (model, tokeny, latencja, koszt) — zweryfikowane
+realnym trace'em pobranym z powrotem przez API, nie tylko "wysłane". Zostało:
+trwała kolejka HITL dla wielu jednoczesnych eskalacji, framework ewaluacyjny,
+case study, porównanie LangChain vs Pydantic AI. Pełny status per wymaganie —
+patrz [`docs/requirements.md`](docs/requirements.md).
 
 ## Uruchomienie UI
 
@@ -112,3 +115,11 @@ cd .clamav/clamav-<wersja>.win.x64
 ```
 Jeśli Twoja wersja/ścieżka różni się od domyślnej, ustaw `CLAMSCAN_PATH` i
 `CLAMAV_DB_PATH` w `.env`.
+
+**Langfuse (observability):** załóż darmowe konto na
+[cloud.langfuse.com](https://cloud.langfuse.com) (region EU) lub
+[us.cloud.langfuse.com](https://us.cloud.langfuse.com) (region US), utwórz
+projekt, wygeneruj klucze API (Settings → API Keys) i wklej je do `.env`
+(`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` zgodnie z
+regionem). Bez kluczy tracing po prostu się wyłącza (SDK loguje ostrzeżenie,
+reszta aplikacji działa normalnie).

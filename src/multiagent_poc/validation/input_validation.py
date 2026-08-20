@@ -16,6 +16,8 @@ order-number format normalization. Two different outcomes:
 from dataclasses import dataclass, field
 import re
 
+from multiagent_poc.observability.langfuse_client import observe
+
 _PESEL_RE = re.compile(r"\b\d{11}\b")
 
 _PESEL_WEIGHTS = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3]
@@ -79,6 +81,7 @@ class ValidationResult:
     flags: list[str] = field(default_factory=list)
 
 
+@observe(name="validate_input")
 def validate_input(question: str) -> ValidationResult:
     if _detect_pesel(question):
         return ValidationResult(allowed=False, reason="pytanie zawiera numer PESEL (dane wrażliwe)")

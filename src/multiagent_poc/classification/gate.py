@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from multiagent_poc.classification.classifier import IntentClassification
 from multiagent_poc.config import settings
 from multiagent_poc.intents import Intent
+from multiagent_poc.observability.langfuse_client import observe
 
 
 @dataclass
@@ -21,6 +22,7 @@ class GateDecision:
     raw_classification: IntentClassification
 
 
+@observe(name="confidence_gate")
 def decide(classification: IntentClassification, threshold: float | None = None) -> GateDecision:
     threshold = settings.confidence_threshold if threshold is None else threshold
 

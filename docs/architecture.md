@@ -22,10 +22,10 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 3. RAG nad runbookami (Chroma + Ollama) — ✅
 4. Subagenci per kategoria procesu, koordynowani przez agenta-router (LangGraph) — ✅
 5. Walidacja danych wejściowych (dane wrażliwe, format numeru zamówienia, uprawnienia, załącznik PDF + skan AV) — ✅
-6. Human-in-the-loop (`interrupt()` w LangGraph) — 🚧 mechanizm działa, brak trwałej kolejki/UI
-7. Observability (Langfuse Cloud, free tier) — ⬜
+6. Human-in-the-loop (`interrupt()` w LangGraph) — 🚧 mechanizm działa, brak trwałej kolejki dla wielu jednoczesnych eskalacji
+7. Observability (Langfuse Cloud, free tier) — ✅
 
-## Co istnieje dzisiaj (2026-08-20, po Tygodniu 5 część 1)
+## Co istnieje dzisiaj (2026-08-20, po Tygodniu 5 część 2)
 
 ### Zaimplementowane i przetestowane
 
@@ -54,28 +54,28 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Graf LangGraph (routing + HITL) | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) | Spina walidację+klasyfikację+gate+załącznik (`classification/pipeline.py`) z subagentem albo węzłem eskalacji przez `interrupt()`/`Command(resume=...)`, z `MemorySaver` jako checkpointerem. |
 | Demo grafu end-to-end (na żywo) | [`scripts/demo_graph.py`](../scripts/demo_graph.py) | Trzy realne przypadki: auto-odpowiedź, odrzucenie walidacji, eskalacja z pauzą i wznowieniem HITL. |
 | Streamlit UI | [`app.py`](../app.py) | Formularz pytania (+ opcjonalny upload PDF), panel HITL operatora, historia rozmowy ze szczegółami technicznymi. Jedna strona, dwie sekcje — patrz decision log po uzasadnienie. |
+| Observability (Langfuse) | [`src/multiagent_poc/observability/langfuse_client.py`](../src/multiagent_poc/observability/langfuse_client.py) | `@observe()` na kluczowych funkcjach (walidacja, klasyfikacja, gate, subagent) tworzy zagnieżdżone spany; `CallbackHandler` przekazany do `ChatOllama.invoke()` łapie model/tokeny/latencję generacji jako observation typu `GENERATION`. |
+| Root trace grafu | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`invoke_graph`) | Jedyny punkt wejścia do `graph.invoke()`/`Command(resume=...)` w `app.py` i `scripts/demo_graph.py` — daje jeden trace na całe pytanie zamiast osobnych trace'ów per węzeł. |
 
 **Zweryfikowane działanie:** `pytest` (32/32 testy), pełny graf na żywo
 (auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
 patrz wpisy "Tydzień 3", "Tydzień 4" i "Tydzień 5" w `decision_log.md`, w tym
 uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live demo
-grafu, oraz pełny przepływ zweryfikowany ręcznie w przeglądarce (Streamlit UI).
+grafu, pełny przepływ zweryfikowany ręcznie w przeglądarce (Streamlit UI),
+oraz realny trace pobrany z powrotem przez Langfuse API (`lf.api.trace.get(...)`)
+potwierdzający poprawne zagnieżdżenie spanów i przechwycone tokeny/latencję.
 
 ### Zaplanowane, jeszcze puste
 
 | Moduł | Plik | Odpowiada za warstwę |
 |---|---|---|
 | HITL — trwała kolejka (wiele jednoczesnych eskalacji) | `src/multiagent_poc/hitl/` | 6 |
-| Observability | — | 7 |
-
-Integracja Langfuse czeka na założenie konta Langfuse Cloud przez użytkownika
-— patrz `requirements.md` po pełny status.
 
 ## Stack
 
 LangGraph + LangChain, Ollama (lokalnie: `llama3.1:8b` do generacji,
 `nomic-embed-text` do embeddingów), Chroma (lokalna, persystentna), Langfuse
-Cloud (free tier, zaplanowane), Streamlit (UI — działa, `app.py`).
+Cloud (free tier — działa), Streamlit (UI — działa, `app.py`).
 
 ## Środowisko dev
 

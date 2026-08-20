@@ -14,7 +14,7 @@ import uuid
 from langgraph.types import Command
 import streamlit as st
 
-from multiagent_poc.graph.pipeline_graph import build_graph
+from multiagent_poc.graph.pipeline_graph import build_graph, invoke_graph
 from multiagent_poc.intents import INTENT_DESCRIPTIONS, Intent
 
 st.set_page_config(page_title="Retail Ops Assistant (PoC)", page_icon="🧭", layout="centered")
@@ -53,7 +53,7 @@ def _run_graph(question: str, attachment_path: Path | None):
         inputs["attachment_path"] = str(attachment_path)
 
     try:
-        result = graph.invoke(inputs, config=_config())
+        result = invoke_graph(graph, inputs, config=_config())
     except Exception as e:  # AttachmentRejected etc. can still surface here (raised before the try/except node)
         st.session_state.history.append({"question": question, "answer": f"Odrzucono: {e}", "meta": None})
         return
@@ -81,7 +81,7 @@ def _run_graph(question: str, attachment_path: Path | None):
 
 def _resume_with_human_answer(human_answer: str):
     graph = get_graph()
-    result = graph.invoke(Command(resume=human_answer), config=_config())
+    result = invoke_graph(graph, Command(resume=human_answer), config=_config())
     st.session_state.history.append(
         {
             "question": st.session_state.pending["question"],

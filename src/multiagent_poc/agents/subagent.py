@@ -18,6 +18,7 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 
 from multiagent_poc.config import settings
 from multiagent_poc.intents import INTENT_RUNBOOK_MAP, Intent
+from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
 from multiagent_poc.rag.index import COLLECTION_SECTION
 from multiagent_poc.rag.retrieval import ANSWER_SYSTEM_PROMPT, RetrievedChunk
 
@@ -57,6 +58,7 @@ def _retrieve_for_intent(question: str, intent: Intent, client: chromadb.ClientA
     return chunks
 
 
+@observe(name="subagent_answer")
 def answer(question: str, intent: Intent, client: chromadb.ClientAPI | None = None) -> AgentAnswer:
     if intent == Intent.INNE:
         raise ValueError("Intent.INNE has no subagent/runbook — should have been escalated by the gate")
@@ -67,6 +69,9 @@ def answer(question: str, intent: Intent, client: chromadb.ClientAPI | None = No
     context = "\n\n---\n\n".join(f"[{c.source} | {c.heading_path}]\n{c.text}" for c in chunks)
     system_prompt = f"{ANSWER_SYSTEM_PROMPT}\n\n{AGENT_PROMPT_ADDENDUM[intent]}"
     llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
-    response = llm.invoke([("system", system_prompt), ("human", f"Kontekst:\n{context}\n\nPytanie: {question}")])
+    response = llm.invoke(
+        [("system", system_prompt), ("human", f"Kontekst:\n{context}\n\nPytanie: {question}")],
+        config={"callbacks": [get_callback_handler()]},
+    )
 
     return AgentAnswer(text=response.content, sources=sorted({c.source for c in chunks}))
