@@ -592,6 +592,64 @@ etapie, surowy materiał pod przyszłe STAR.
   gradientem zieleni marki, emoji żaby (nie logo) zamiast nazwy/ikony
   firmy, plakietka zastrzeżenia widoczna od razu po wejściu na stronę.
 
+## Sprint 9 — case study (materiał rekrutacyjny) — 2026-08-20
+
+- **Decyzja:** walkthrough oparty na **domenie zamówień/dostaw**, nie BHP.
+  **Dlaczego:** materiał trafia do rekrutacji w sieci convenience — obsługa
+  braków w dostawie jest bliższa codziennej pracy franczyzobiorcy niż wypadek
+  przy pracy, więc lepiej rezonuje z odbiorcą.
+  **Efekt uboczny, który okazał się zaletą:** dobór pytania wymagał kilku prób,
+  bo pytania o dostawy klasyfikują się słabo (patrz niżej) — z tego wyszedł
+  najmocniejszy fragment całego materiału.
+
+- **Decyzja:** dwa scenariusze zamiast jednego, celowo **niemal identyczne
+  merytorycznie** (brakujące palety, kierowca odjechał), ale różnie potraktowane
+  przez system.
+  **Dlaczego:** przy testowaniu kandydatów na pytanie okazało się, że dodanie
+  numeru zamówienia (`ZM-2024-00981`) do treści realnie psuje klasyfikację
+  (przeciąga ją w stronę `płatności`/`reklamacje`). Zamiast to ukryć —
+  pokazane wprost jako para: scenariusz A (confidence 0.67 → pełna
+  automatyzacja, 273.9s) i B (confidence 0.33 → eskalacja w 2.9s, bez ani
+  jednego wywołania LLM).
+  **Efekt:** zestawienie tłumaczy confidence gate lepiej niż jakikolwiek opis
+  i jednocześnie uczciwie pokazuje słabość klasyfikatora (65% top-1) na
+  konkretnym, realnym przykładzie.
+
+- **Zaobserwowany na żywo błąd modelu (odnotowany, nie ukryty):** w
+  scenariuszu A model **dwukrotnie zmyślił rozwinięcie skrótu „WZ"**
+  („Wywiad Zamówienia" w odpowiedzi, „Widok Zamówienia" w dokumencie).
+  Runbook używa skrótu bez rozwinięcia, więc model je wymyślił zamiast
+  zostawić oryginał. Procedura merytorycznie poprawna, ale w piśmie do
+  dostawcy taki błąd rzuca się w oczy — i nie wyłapały go ani testy
+  jednostkowe, ani LLM-as-judge, tylko przegląd na żywo.
+
+- **Decyzja:** „nagranie" jako **interaktywne odtworzenie krok po kroku** w
+  materiale HTML, nie plik wideo/GIF.
+  **Dlaczego:** (a) narzędzie do zrzutów ekranu w tej sesji przestało
+  odpowiadać, a Chrome do nagrywania GIF-ów nie był podłączony; (b) niezależnie
+  od tego — realne nagranie pełnego cyklu to ~4,5 minuty, z czego ~99% to
+  spinner, więc jako materiał do maila byłoby gorsze niż anotowany przebieg,
+  który czyta się we własnym tempie i pokazuje warstwę „co dzieje się pod
+  spodem" obok każdego ekranu.
+  **Efekt:** odtwarzacz z dwoma scenariuszami, paskiem kroków, trybem
+  auto-play i panelem technicznym per krok. Wszystkie treści, czasy i liczby
+  tokenów pochodzą z faktycznego uruchomienia i trace'ów z Langfuse API.
+  Logika odtwarzacza zweryfikowana 24 asercjami w Node z atrapą DOM
+  (nawigacja, przełączanie scenariuszy, podmiana treści, stany przycisków).
+
+- **Decyzja:** jawna, wyeksponowana nota o wydajności — model lokalny na CPU,
+  ~2 min na wywołanie LLM, ~4,5 min na pełny cykl; na modelu hostowanym te
+  same kroki to sekundy, a architektura się nie zmienia.
+  **Dlaczego:** bez tej noty czasy w materiale wyglądają jak wada produktu,
+  a nie jak konsekwencja świadomej decyzji „wszystko lokalne i darmowe".
+  Rozróżnienie „to koszt decyzji o dostawcy modelu, nie projektu" jest
+  istotne dla odbiorcy oceniającego architekturę.
+
+- **Decyzja:** usunięte odwołania do konkretnego poprzedniego pracodawcy z
+  README, case study i dokumentacji architektury.
+  **Dlaczego:** materiał ma bronić się sam, bez kontekstu poprzednich
+  projektów zawodowych.
+
 ## Szablon na kolejne sprinty
 
 ```

@@ -12,8 +12,8 @@ Asystent operacyjny dla sklepów sieci convenience (kontekst zbliżony do
 franczyzy typu Żabka). Pracownik/franczyzobiorca zadaje pytanie proceduralne,
 system klasyfikuje intencję, sprawdza pewność klasyfikacji, i albo odpowiada
 na bazie wewnętrznych runbooków (RAG), albo eskaluje do człowieka (HITL).
-Pełne tło biznesowe i motywacja projektu (portfolio pod rozmowy AI PM,
-inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../README.md).
+Pełne tło biznesowe i motywacja projektu (portfolio pod rozmowy AI PM) —
+patrz główny [`README.md`](../README.md).
 
 ## Warstwy architektury (docelowo)
 

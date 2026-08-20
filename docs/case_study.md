@@ -14,11 +14,10 @@ awarie techniczne, skargi klienta). System klasyfikuje intencję, sprawdza
 pewność klasyfikacji, i albo odpowiada na bazie wewnętrznych runbooków (RAG),
 albo eskaluje do człowieka — nigdy nie zgaduje.
 
-Projekt modelowany na projekcie Procurement, który realizowałem w PwC, ale
-celowo doprowadzony do końca łącznie z warstwą **walidacji danych
-wejściowych** i **human-in-the-loop**, których tamtemu projektowi zabrakło z
-powodu cięć budżetowych. Kontekst biznesowy (sieć convenience, franczyza)
-świadomie zbliżony do realiów Żabki.
+Projekt świadomie doprowadzony do końca łącznie z warstwami, które w projektach
+tego typu bywają pierwsze do wycięcia: **walidacją danych wejściowych**,
+**human-in-the-loop** i **ewaluacją**. Kontekst biznesowy (sieć convenience,
+franczyza) celowo zbliżony do realiów Żabki, ale w całości fikcyjny.
 
 Pełny, surowy log decyzji (co, dlaczego, z jakim skutkiem — po każdym etapie)
 jest publiczny w repo: [`docs/decision_log.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/decision_log.md).
@@ -31,7 +30,7 @@ Ten dokument to jego skondensowana, czytelna wersja.
 | 1 | Klasyfikacja intencji (9 kategorii: 8 procesowych + `inne`) | ✅ |
 | 2 | Confidence gate (próg pewności → auto-odpowiedź vs. eskalacja) | ✅ |
 | 3 | RAG nad runbookami (Chroma + Ollama) | ✅ |
-| 4 | Dwa agenty per kategoria (subagent odpowiedzi + drafting agent dokumentów) | ✅ |
+| 4 | Dwaj agenci per kategoria (subagent odpowiedzi + drafting agent dokumentów) | ✅ |
 | 5 | Walidacja danych wejściowych (dane wrażliwe, format, załącznik PDF + skan AV) | ✅ |
 | 6 | Human-in-the-loop (współdzielona kolejka, `interrupt()`/`resume`) | ✅ |
 | 7 | Observability (Langfuse Cloud) | ✅ |
@@ -41,118 +40,174 @@ Diagram sekwencji pełnego przepływu (renderuje się natywnie na GitHubie):
 
 Pełny opis modułów i plików: [`docs/architecture.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/architecture.md)
 
-### Stack
+### Stack i uwaga o wydajności
 
-LangGraph + LangChain, Ollama (`llama3.1:8b` lokalnie, CPU-only), Chroma,
-Langfuse Cloud (free tier), Streamlit. Wszystko darmowe/lokalne poza
-observability.
+LangGraph + LangChain, Ollama (`llama3.1:8b`), Chroma, Langfuse Cloud (free
+tier), Streamlit.
 
-### Dwa agenty, nie jeden
+> **Ważne dla oceny czasów w tym dokumencie:** na potrzeby PoC model działa
+> **lokalnie przez Ollamę, na CPU, bez GPU i bez płatnego API**. Skutek: jedno
+> wywołanie LLM trwa ~2 minuty, a pełny cykl z dwoma agentami ~4,5 minuty.
+> To wyłącznie konsekwencja świadomej decyzji „wszystko lokalne i darmowe" —
+> na modelu hostowanym (Claude, GPT) te same kroki wykonują się w kilka sekund.
+> Architektura, prompty i graf pozostają bez zmian; zmienia się wyłącznie
+> dostawca modelu w `config.py`. Wszystkie pozostałe kroki (walidacja,
+> klasyfikacja, routing, gate) są rzędu milisekund–sekund i nie zależą od LLM-a.
+
+### Dwaj agenci, nie jeden
 
 Każda z 7 kategorii procesowych (bez `higiena` — to kategoria checklist, nie
-korespondencji) ma **dwóch** agentów:
+korespondencji) ma **dwóch** agentów o różnych rolach:
 
-1. **Subagent** ([`agents/subagent.py`](https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/agents/subagent.py)) —
+1. **Subagent odpowiedzi** ([`agents/subagent.py`](https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/agents/subagent.py)) —
    odpowiada na pytanie proceduralne, retrieval przefiltrowany do właściwego runbooka.
 2. **Drafting agent** ([`agents/drafting_agent.py`](https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/agents/drafting_agent.py)) —
    generuje gotowy dokument (zgłoszenie, karta zdarzenia, pismo), reużywając
    kontekstu RAG już pobranego przez subagenta. Brakujące dane → jawny
    placeholder `[uzupełnij: ...]`, nigdy zgadywanie. Kategorie wrażliwe (BHP,
-   HR) — dokument zawsze przechodzi przez tę samą kolejkę HITL co eskalacje,
-   zanim trafi do pracownika.
+   HR) — dokument zawsze przechodzi przez kolejkę HITL, zanim trafi do pracownika.
 
-## 3. Walkthrough na żywo — pytanie BHP
+## 3. Walkthrough na żywo — obsługa braku w dostawie
 
-Poniżej dokładny, rzeczywisty przebieg jednego zapytania w uruchomionej
-aplikacji (Streamlit), z komentarzem co dzieje się pod spodem na każdym
-kroku. Wszystkie cytowane treści i liczby pochodzą z faktycznego uruchomienia
-(łącznie z realnym trace'em pobranym z Langfuse API), nie są ilustracyjne.
+Poniżej dwa **rzeczywiste** przebiegi z jednego uruchomienia, oba z domeny
+zamówień/dostaw. Wszystkie cytowane treści, czasy i liczby tokenów pochodzą z
+faktycznego wykonania i z trace'ów pobranych z Langfuse API — nic nie jest
+ilustracyjne.
+
+Scenariusze dobrane celowo: **pytania są niemal identyczne merytorycznie**
+(brakuje palet, kierowca odjechał), ale system potraktował je zupełnie inaczej —
+co pokazuje, jak działa confidence gate i gdzie leży realna słabość klasyfikatora.
+
+---
+
+### Scenariusz A — wysoka pewność, pełna obsługa automatyczna
 
 **Pytanie pracownika:**
-> Pracownik poparzył się podczas czyszczenia grilla, co robimy? Zdarzenie
-> miało miejsce dzisiaj o 14:30, świadkiem był kolega z zmiany Marek.
+> Przy odbiorze towaru brakuje dwóch palet względem WZ, kierowca już odjechał,
+> dostawa była dziś rano od Centralnego Dostawcy, co mam zrobić?
 
-**Krok 1 — walidacja (`validate_input`, <1ms).** Pytanie sprawdzane pod kątem
-PESEL (suma kontrolna), prompt injection, próśb o dane osób trzecich. Brak
-naruszeń → przechodzi dalej. Gdyby zawierało dane wrażliwe, zostałoby
-odrzucone *zanim* dotarłoby do klasyfikatora czy LLM-a.
+**Krok 1 — walidacja** (`validate_input`, **0.000s**)
+Sprawdzenie pod kątem PESEL (suma kontrolna), prompt injection, próśb o dane
+osób trzecich, formatu numeru zamówienia. Czysto → dalej. Gdyby pytanie
+zawierało dane wrażliwe, zostałoby odrzucone *zanim* dotarłoby do
+klasyfikatora czy jakiegokolwiek LLM-a.
 
-**Krok 2 — klasyfikacja intencji (`classify_intent`, 3.9s).** k-NN (k=3) nad
-embeddingami przykładowych fraz w Chroma. Wynik: intencja `bhp`, wysoka
-pewność (spójne z wcześniejszą ewaluacją klasyfikatora — patrz sekcja 4).
+**Krok 2 — klasyfikacja intencji** (`classify_intent`, **3.070s**)
+k-NN (k=3) nad embeddingami przykładowych fraz w Chroma.
+Wynik: **`dostawy`, confidence 0.67** (głosy: `dostawy` 2, `bhp` 1).
 
-**Krok 3 — confidence gate.** Pewność powyżej progu → routing do subagenta
-`bhp`, bez eskalacji.
+**Krok 3 — confidence gate** (`confidence_gate`, **0.000s**)
+0.67 ≥ próg 0.6 → **auto-obsługa**, routing do subagenta `dostawy`. Bez eskalacji.
 
-**Krok 4 — subagent odpowiada (134s, 876 tokenów wejścia / 86 wyjścia).**
-RAG przefiltrowany do `04_bhp.md` generuje odpowiedź:
+**Krok 4 — subagent odpowiada** (`subagent_answer`, **154.3s**; LLM: 150.2s, 713 in / 168 out tokenów)
+RAG przefiltrowany wyłącznie do `01_dostawy.md` (`sources=['01_dostawy.md']` —
+nigdy inny runbook, dzięki filtrowi metadanych w Chroma):
 
-> Należy udzielić pierwszej pomocy pracownikowi, który poparzył się.
-> Następnie należy wezwać pomoc medyczną jeśli konieczne. Ponadto należy
-> zabezpieczyć miejsce zdarzenia i wypełnić kartę zdarzenia BHP w systemie w
-> tym samym dniu roboczym.
+> Zgodnie z procedurą opisaną w rozdziale 4.1 Brak towaru (niedostarczona
+> pozycja), musisz:
+> 1. Odnotować brak towaru na WZ (…) z podpisem kierowcy.
+> 2. Zgłosić brak towaru przez system w ciągu 24 godzin.
+> 3. Nie koryguje się stanów magazynowych ręcznie, ponieważ system generuje
+>    korektę automatycznie po zatwierdzeniu zgłoszenia przez dział zaopatrzenia.
 
-**Krok 5 — drafting agent (143s, 990 tokenów wejścia / 121 wyjścia).**
-Ponieważ `bhp` ma zdefiniowany szablon dokumentu (`requires_human_review=True`),
-agent generuje szkic "Karty zdarzenia BHP", reużywając tych samych chunków co
-subagent:
+Model trafnie wybrał **sekcję 4.1** (brak towaru), a nie 4.3 (pomyłka
+dostawcy) — istotne rozróżnienie, bo obie sekcje dotyczą rozbieżności przy
+odbiorze, ale mają inne procedury.
 
-```
-Data godzina zdarzenia: 14:30
-Opis zdarzenia: Pracownik poparzył się podczas czyszczenia grilla. [Uzupełnij: opis_zdarzenia]
-Udzielona pomoc: Zastąpiono pracownika, zapewniono mu pierwszą pomoc i wezwanie pogotowia medycznego. [Uzupełnij: udzielona_pomoc]
-Świadkowie: Marek, kolega z zmiany.
-```
-
-Model poprawnie wyciągnął godzinę (14:30) i świadka (Marek) z treści pytania.
-**Zaobserwowana niedoskonałość, nieukrywana:** dla dwóch pól model wypełnił
-treść *i* mimo to dopisał obok placeholder — niespójność instruction-following,
-odnotowana w `decision_log.md` jako znane ograniczenie do poprawy promptu.
-
-**Krok 6 — pauza grafu.** Ponieważ dokument wymaga recenzji, graf LangGraph
-wstrzymuje się przez `interrupt()` (nie kończy się błędem — to zaprojektowana
-pauza z zapisanym stanem). Payload: `{"kind": "document_review", "document_type": "Karta zdarzenia BHP", ...}`.
-Pracownik widzi: *"Twoje pytanie czeka na operatora"*. Dokument trafia do
-**współdzielonej kolejki HITL** — widoczny dla operatora niezależnie od tego,
-w której sesji/przeglądarce został zgłoszony (zweryfikowane wcześniej w
-dwóch niezależnych kartach przeglądarki).
-
-**Krok 7 — operator zatwierdza.** W panelu HITL operator widzi pytanie, powód
-("dokument do zatwierdzenia: Karta zdarzenia BHP") i edytowalną treść. Klika
-"Zatwierdź dokument" → graf wznawia się przez `Command(resume=...)`.
-Wznowienie jest natychmiastowe (0.016s) — operator dostarczył gotowy tekst,
-więc nie ma potrzeby ponownego wywołania LLM-a.
-
-**Krok 8 — pracownik dostaje odpowiedź.** Po kliknięciu "Sprawdź, czy jest
-odpowiedź" pracownik widzi **oba** elementy razem: proceduralną odpowiedź
-subagenta *i* zatwierdzony przez operatora dokument — mimo że dokument
-przeszedł przez pauzę/wznowienie grafu, a odpowiedź nie.
-
-### Co pokazuje realny trace z Langfuse (pobrany przez API tej samej interakcji)
+**Krok 5 — drafting agent tworzy dokument** (`draft_document`, **116.6s**; LLM: 115.8s, 834 in / 94 out tokenów)
+`dostawy` ma `requires_human_review=False`, więc dokument trafia do pracownika
+od razu, bez kolejki:
 
 ```
-handle_user_turn (285.6s total)
-├─ validate_input                 <1ms
-├─ classify_intent                3.9s
-├─ confidence_gate                <1ms
-├─ subagent_answer                138.0s
-│   └─ GENERATION ChatOllama      134.0s  876 in / 86 out tokens
-└─ draft_document                 143.7s
-    └─ GENERATION ChatOllama      143.0s  990 in / 121 out tokens
+Numer zamówienia lub dostawy: [uzupełnij: numer_zamowienia_lub_dostawy]
+Dostawca: Centralny Dostawca
+Opis rozbieżności: Brakuje dwóch palet w porównaniu do (…) WZ (…)
+Data dostawy: dzisiaj rano
 ```
 
-Każde pytanie w systemie generuje dokładnie taki zagnieżdżony trace —
-widoczny w Langfuse Cloud z modelem, liczbą tokenów i latencją każdego kroku,
-nie tylko całości. `total_cost` wychodzi `None` — oczekiwane, model lokalny
-przez Ollama nie ma wpisu w cenniku Langfuse, ale tokeny/latencja i tak dają
-realną obserwowalność.
+Agent poprawnie wyciągnął z pytania **dostawcę** i **datę**, a brakujący numer
+zamówienia **jawnie oznaczył placeholderem zamiast go wymyślić** — to
+zaprojektowane zachowanie: dokument z halucynowanym numerem jest gorszy niż
+dokument z widocznym brakiem.
 
-**Uczciwa uwaga o wydajności:** ~285s na pełny cykl (dwa wywołania LLM
-sekwencyjnie) to realna latencja CPU-only inference na tej maszynie. GPU albo
-mniejszy model skróciłyby to znacząco — świadomy trade-off "wszystko lokalne
-i darmowe" z reszty projektu.
+**Łącznie: 273.9s** (z czego 266s to dwa wywołania LLM na CPU — patrz uwaga o
+wydajności wyżej; reszta pipeline'u to 3 sekundy).
 
-## 4. Ewaluacja — nie tylko "działa", ale "jak dobrze"
+#### Uczciwie: co model zrobił źle w tym przebiegu
+
+Dwukrotnie **rozwinął skrót „WZ" — i za każdym razem błędnie** („Wywiad
+Zamówienia" w odpowiedzi, „Widok Zamówienia" w dokumencie). Runbook używa
+skrótu WZ bez rozwinięcia, więc model go zmyślił zamiast zostawić w oryginale.
+Merytorycznie procedura jest poprawna, ale w piśmie idącym do dostawcy taki
+błąd rzuca się w oczy. To dokładnie rodzaj usterki, który wyłapuje dopiero
+przegląd na żywo — nie testy jednostkowe i nie LLM-as-judge.
+
+---
+
+### Scenariusz B — niska pewność, eskalacja do człowieka
+
+**Pytanie pracownika** (to samo zdarzenie, inaczej sformułowane):
+> Brakuje palet w dostawie, kierowca odjechał. Zamówienie ZM-2024-00981.
+
+**Krok 1-2 — walidacja i klasyfikacja** (**2.939s** łącznie)
+Walidacja czysta. Klasyfikator: **confidence 0.33** — głosy rozproszone, brak
+większości.
+
+**Krok 3 — confidence gate → STOP**
+0.33 < próg 0.6 → efektywna intencja `inne`, **eskalacja**. Kluczowe: żaden LLM
+nie został wywołany, żaden dokument nie powstał. System **nie zgadywał** —
+cały przebieg zajął niecałe 3 sekundy.
+
+**Krok 4 — pauza grafu** (`interrupt()`)
+Graf wstrzymuje się z zachowanym stanem. Payload:
+```json
+{ "kind": "escalation",
+  "question": "Brakuje palet w dostawie, kierowca odjechał. Zamówienie ZM-2024-00981.",
+  "reason": "confidence=0.33 < próg" }
+```
+Pytanie trafia do **współdzielonej kolejki HITL** — widocznej dla operatora
+niezależnie od tego, w której sesji/przeglądarce zostało zadane (zweryfikowane
+w dwóch niezależnych kartach przeglądarki).
+
+**Krok 5 — operator odpowiada, graf wznawia się** (`Command(resume=...)`, **0.006s**)
+Operator wpisuje odpowiedź w panelu HITL; graf wznawia się natychmiast i
+dostarcza ją pracownikowi jako finalną odpowiedź.
+
+---
+
+### Czego uczy zestawienie A i B
+
+Dwa pytania o to samo zdarzenie biznesowe, dwie różne ścieżki. To **nie jest
+przypadek** — to zaprojektowane zachowanie confidence gate'u, ale też
+odsłonięta słabość klasyfikatora: dodanie numeru zamówienia (`ZM-2024-00981`)
+do treści realnie pogarsza klasyfikację, przeciągając ją w stronę `płatności`.
+Znane, udokumentowane ograniczenie (65% top-1 accuracy — sekcja 4), a nie
+niespodzianka.
+
+**Z perspektywy produktowej to zachowanie pożądane:** system, który przy
+niepewności eskaluje w 3 sekundy, jest lepszy niż system, który po 4 minutach
+wygeneruje pewnie brzmiący, ale potencjalnie błędny dokument.
+
+### Realny trace z Langfuse — scenariusz A
+
+```
+handle_user_turn                    273.910s
+├─ handle_question                    3.073s
+│   ├─ validate_input                 0.000s
+│   ├─ classify_intent                3.070s
+│   └─ confidence_gate                0.000s
+├─ subagent_answer                  154.250s
+│   └─ GENERATION ChatOllama         150.229s   713 in / 168 out tok
+└─ draft_document                   116.559s
+    └─ GENERATION ChatOllama         115.825s   834 in / 94 out tok
+```
+
+Każde pytanie generuje taki zagnieżdżony trace — z modelem, liczbą tokenów i
+latencją **każdego kroku z osobna**, nie tylko całości. `total_cost` wychodzi
+`None`, bo model lokalny przez Ollamę nie ma wpisu w cenniku Langfuse; tokeny
+i latencja i tak dają pełną obserwowalność.
+
+## 4. Ewaluacja — nie tylko „działa", ale „jak dobrze"
 
 ### Klasyfikator intencji (`scripts/evaluate_classifier.py`, 20 pytań)
 
@@ -187,25 +242,28 @@ obnażyło lukę. Pełny opis: [`docs/decision_log.md`, Sprint 6](https://github
   intuicji.
 - **Ollama zamiast Claude/GPT jako silnik LLM** — rozważone i odrzucone:
   subskrypcja Claude nie daje dostępu do API używanego przez LangChain, a
-  podpięcie płatnego API na stałe złamałoby założenie "wszystko za darmo".
-  Świadomy trade-off jakość vs koszt/lokalność.
+  podpięcie płatnego API na stałe złamałoby założenie „wszystko za darmo".
+  Świadomy trade-off jakość i szybkość vs koszt/lokalność — z pełną
+  świadomością, że w produkcji wybór byłby odwrotny.
 - **Walidacja przed klasyfikacją, nie po** — dane wrażliwe nigdy nie trafiają
   nawet do klasyfikatora, nie tylko do LLM-a.
 - **Malware scan lokalny (ClamAV), nie chmurowy** — plik nigdy nie opuszcza
   maszyny, zgodnie z założeniem lokalności.
-- **Kolejka HITL: brakujące pole → placeholder, nie zgadywanie** — dokument z
-  halucynowaną datą jest gorszy niż dokument z widocznym brakiem.
+- **Brakujące pole → placeholder, nie zgadywanie** — dokument z halucynowaną
+  datą czy numerem jest gorszy niż dokument z widocznym brakiem.
 
 ## 6. Znane ograniczenia (uczciwie, nie ukryte)
 
-- Klasyfikator ma 65% top-1 accuracy — realny przypadek błędnej klasyfikacji
-  (pytanie o sanepid → `hr` zamiast eskalacji) został złapany na żywo w demo
-  grafu i opisany, nie ukryty.
+- Klasyfikator ma 65% top-1 accuracy — widać to wprost w scenariuszu B wyżej,
+  a także w złapanym na żywo przypadku pytania o sanepid błędnie
+  sklasyfikowanego jako `hr`.
+- Model potrafi zmyślić rozwinięcie skrótu (WZ → „Wywiad Zamówienia") albo rok
+  w dacie — złapane na żywo w tym i poprzednim przebiegu, opisane, nie ukryte.
 - LLM-as-judge to ten sam model co generuje odpowiedzi — słaby, czasem
   niespójny sędzia (złapany przypadek: ocena 1/5 dla odpowiedzi, która
   faktycznie była zgodna z procedurą).
-- Model czasem duplikuje pole (wypełnia je i mimo to dodaje placeholder) —
-  niespójność instruction-following w drafting agencie.
+- Czasy odpowiedzi (~4,5 min na pełny cykl) wynikają wyłącznie z lokalnej
+  Ollamy na CPU — patrz uwaga w sekcji 2.
 - Kolejka HITL i checkpointer grafu żyją w pamięci procesu — nie przetrwają
   restartu serwera (świadome uproszczenie PoC, w produkcji: Redis/Postgres).
 

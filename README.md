@@ -6,8 +6,8 @@ techniczne, skargi klienta). System klasyfikuje intencję, sprawdza pewność kl
 i albo odpowiada na bazie wewnętrznych runbooków (RAG), albo eskaluje do człowieka.
 
 Projekt portfolio pod rozmowy AI PM — świadomie zbliżony realiami do franczyzy typu
-Żabka, modelowany na projekcie Procurement (PwC), ale doprowadzony do końca łącznie z
-warstwą walidacji danych wejściowych, której w tamtym projekcie zabrakło.
+Żabka, doprowadzony do końca łącznie z warstwą walidacji danych wejściowych
+i human-in-the-loop, które w projektach tego typu bywają pierwsze do wycięcia.
 
 Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/decision_log.md).
 
@@ -23,7 +23,7 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
    [`src/multiagent_poc/intents.py`](src/multiagent_poc/intents.py).
 2. **Confidence gate** — poniżej progu pewności → dopytanie / eskalacja, nie halucynacja.
 3. **RAG nad runbookami** — [`docs/runbooks/`](docs/runbooks/), Chroma jako wektorowa baza.
-4. **Dwa agenty per kategoria procesu**, koordynowani przez agenta-router (LangGraph):
+4. **Dwaj agenci per kategoria procesu**, koordynowani przez agenta-router (LangGraph):
    subagent odpowiadający na pytanie ([`agents/subagent.py`](src/multiagent_poc/agents/subagent.py))
    i drafting agent przygotowujący gotowy dokument/zgłoszenie
    ([`agents/drafting_agent.py`](src/multiagent_poc/agents/drafting_agent.py), 7/8 kategorii —
@@ -113,8 +113,15 @@ Wymaga działającej Ollamy (`llama3.1:8b`, `nomic-embed-text` — patrz Setup
 poniżej) i wcześniej zbudowanego indeksu Chroma
 (`python -m multiagent_poc.rag.index` oraz
 `python -m multiagent_poc.classification.classifier` do zaindeksowania
-przykładów intencji). Odpowiedzi generowane lokalnie na CPU — jeden pełny
-cykl (klasyfikacja + generacja) może potrwać do ok. minuty, patrz `decision_log.md`.
+przykładów intencji).
+
+**Uwaga o czasie odpowiedzi:** na potrzeby PoC model działa **lokalnie przez
+Ollamę na CPU** (`llama3.1:8b`), bez GPU i bez płatnego API. Skutek: jedno
+wywołanie LLM trwa ~2 minuty, a pełny cykl z dwoma agentami (odpowiedź +
+dokument) ~5 minut. To wyłącznie konsekwencja świadomej decyzji "wszystko
+lokalne i darmowe" — na hostowanym modelu (Claude, GPT) te same kroki
+wykonują się w kilka sekund. Architektura, prompty i graf pozostają bez
+zmian, zmienia się tylko dostawca modelu w `config.py`.
 
 ## Setup (dev)
 
