@@ -1,4 +1,4 @@
-from multiagent_poc.intents import Intent, INTENT_RUNBOOK_MAP, runbook_path
+from multiagent_poc.intents import INTENT_RUNBOOK_MAP, Intent, runbook_path
 
 
 def test_every_intent_except_inne_has_runbook():

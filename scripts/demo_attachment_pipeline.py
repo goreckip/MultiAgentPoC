@@ -1,4 +1,4 @@
-"""Week 4 demo: a vague question that the classifier alone can't confidently
+"""Sprint 4 demo: a vague question that the classifier alone can't confidently
 route, resolved by attaching a PDF with an order number. Run after
 scripts/evaluate_classifier.py has built the exemplar index at least once.
 """

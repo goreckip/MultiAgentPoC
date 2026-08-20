@@ -1,4 +1,4 @@
-"""Week 4 demo: full graph end to end — auto-handled question, rejected
+"""Sprint 4 demo: full graph end to end — auto-handled question, rejected
 question (validation), and an escalated question that pauses on interrupt()
 and resumes with a human answer.
 """

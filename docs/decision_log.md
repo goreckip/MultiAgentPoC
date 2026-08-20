@@ -3,14 +3,14 @@
 Format: decyzja → dlaczego (trade-off) → efekt/obserwacja. Wpis po każdym sensownym
 etapie, surowy materiał pod przyszłe STAR.
 
-## Tydzień 1 — 2026-08-19
+## Sprint 1 — 2026-08-19
 
 - **Decyzja:** framework agentowy: LangGraph jako baza szkieletu (zamiast Pydantic AI + pydantic-deep).
   **Dlaczego:** LangGraph ma dojrzalsze wsparcie dla grafu stanów i multi-agent routingu
   (confidence gate jako węzeł warunkowy, subagenci per kategoria jako osobne node'y) oraz
   więcej przykładów/dokumentacji do szybkiego postawienia szkieletu. Porównanie z Pydantic AI
-  zaplanowane później (Tydzień 5, README) — jedno drzewo decyzyjne trzeba było wybrać jako pierwsze.
-  **Efekt:** TBD po zbudowaniu grafu (Tydzień 3-4).
+  zaplanowane później (Sprint 5, README) — jedno drzewo decyzyjne trzeba było wybrać jako pierwsze.
+  **Efekt:** TBD po zbudowaniu grafu (Sprint 3-4).
 
 - **Decyzja:** katalog intencji zdefiniowany jako `Enum` w kodzie (`src/multiagent_poc/intents.py`),
   z mapowaniem intencja → plik runbooka, zamiast trzymania tylko w dokumentacji.
@@ -22,9 +22,9 @@ etapie, surowy materiał pod przyszłe STAR.
   **Dlaczego:** to podstawowy test confidence gate — system musi rozpoznać brak trafnych
   chunków / niską pewność klasyfikacji i eskalować do człowieka zamiast halucynować
   odpowiedź na bazie najbliższego tematycznie dokumentu.
-  **Efekt:** do zweryfikowania w Tygodniu 3 na pytaniach 14-20 z `docs/test_questions.md`.
+  **Efekt:** do zweryfikowania w Sprincie 3 na pytaniach 14-20 z `docs/test_questions.md`.
 
-## Tydzień 2 — dokończenie (realny eksperyment) — 2026-08-19
+## Sprint 2 — dokończenie (realny eksperyment) — 2026-08-19
 
 - **Decyzja:** finalnie wybieram `section_chunks` (chunking po `##`/`###`) jako
   strategię produkcyjną dla RAG, nie fixed-size.
@@ -41,7 +41,7 @@ etapie, surowy materiał pod przyszłe STAR.
     ("4. Rozbieżności ilościowe i jakościowe > 4.3 Pomyłka dostawcy...") — czytelny
     i gotowy do wklejenia w prompt bez dodatkowej obróbki.
   **Efekt:** `COLLECTION_SECTION` (`runbooks_section`) będzie domyślną kolekcją
-  używaną przez warstwę RAG w kolejnych tygodniach; `COLLECTION_FIXED` zostaje w
+  używaną przez warstwę RAG w kolejnych sprintach; `COLLECTION_FIXED` zostaje w
   kodzie jako baseline porównawczy do README/demo, nie jako ścieżka produkcyjna.
 
 - **Decyzja:** osobny model do embeddingów (`nomic-embed-text`, ~274MB) zamiast
@@ -56,11 +56,11 @@ etapie, surowy materiał pod przyszłe STAR.
 
 - **Decyzja:** Langfuse Cloud (free/Hobby tier) zamiast self-hosted (Docker).
   **Dlaczego:** free tier wystarcza na traces/koszty/latencję/podstawowe evals w PoC
-  i eliminuje cały krok stawiania i utrzymywania kontenerów w Tygodniu 4. Trade-off:
+  i eliminuje cały krok stawiania i utrzymywania kontenerów w Sprincie 4. Trade-off:
   dane (treść pytań/odpowiedzi) trafiają na serwery Langfuse (EU/US) zamiast zostać
   lokalnie — akceptowalne, bo runbooki i pytania testowe są w całości fikcyjne/mockowe;
   gdyby projekt miał kiedyś realne dane, ta decyzja wymagałaby rewizji.
-  **Efekt:** TBD po integracji w Tygodniu 4 — do zweryfikowania czy limity free tier
+  **Efekt:** TBD po integracji w Sprincie 4 — do zweryfikowania czy limity free tier
   (liczba eventów/mies.) wystarczą na testy end-to-end.
 
 - **Decyzja:** dodanie warstwy Human-in-the-loop (7. w architekturze) jako osobnego
@@ -72,9 +72,9 @@ etapie, surowy materiał pod przyszłe STAR.
   dodatkowo uzasadnia wcześniejszy wybór LangGraph nad Pydantic AI (wbudowane wsparcie
   dla przerwania grafu i czekania na input człowieka, bez pisania własnego mechanizmu
   kolejkowania od zera).
-  **Efekt:** TBD — planowana implementacja w Tygodniu 4 razem z warstwą walidacji.
+  **Efekt:** TBD — planowana implementacja w Sprincie 4 razem z warstwą walidacji.
 
-## Tydzień 2 — 2026-08-19
+## Sprint 2 — 2026-08-19
 
 - **Decyzja:** rozważono i odrzucono podpięcie modeli Claude (Sonnet/Opus) jako
   głównego silnika LLM, zamiast Ollamy — projekt zostaje przy Ollamie.
@@ -85,7 +85,7 @@ etapie, surowy materiał pod przyszłe STAR.
   jakościowo, ale to świadomy trade-off koszt/lokalność vs jakość — sam w sobie
   dobry materiał na STAR.
   **Efekt:** brak zmian w kodzie/configu. Opcja porównania z API (darmowe/tanie
-  kredyty, np. `claude-haiku-4-5`) zostaje odłożona do Tygodnia 5-6 jako
+  kredyty, np. `claude-haiku-4-5`) zostaje odłożona do Sprintu 5-6 jako
   jednorazowy test jakościowy w README, nie jako stały provider w pipeline.
 
 - **Decyzja:** dwie strategie chunkingu zaimplementowane jako osobne, testowalne
@@ -115,14 +115,14 @@ etapie, surowy materiał pod przyszłe STAR.
   Ollama celowo jeszcze nie zainstalowana — decyzja o modelu/wyborze narzędzia
   odłożona na następny krok.
 
-## Tydzień 3 — 2026-08-19
+## Sprint 3 — 2026-08-19
 
 - **Decyzja:** klasyfikator intencji jako k-NN nad zbiorem przykładowych fraz
   (`exemplars.py`, 6 fraz × 8 kategorii, osobna kolekcja Chroma
   `intent_exemplars`), nie centroidy i nie LLM-classifier.
   **Dlaczego:** najprostsze podejście, które da się w pełni wytłumaczyć
   (confidence = odsetek głosów zwycięskiej intencji wśród k najbliższych
-  sąsiadów) i które reużywa infrastruktury z Tygodnia 2 (Ollama embeddings +
+  sąsiadów) i które reużywa infrastruktury ze Sprintu 2 (Ollama embeddings +
   Chroma). Świadomie **osobny zbiór przykładów od `test_questions.md`** —
   ten drugi to zbiór ewaluacyjny (`eval_set.py`, strukturalna kopia), użycie
   tych samych fraz jako danych referencyjnych i testowych zafałszowałoby wynik
@@ -172,7 +172,7 @@ etapie, surowy materiał pod przyszłe STAR.
   **Efekt:** udokumentowany jako podłoga regresyjna w `test_classifier.py`
   (asercja >= 60%, nie cel docelowy). Do poprawy w przyszłości: więcej
   przykładów na kategorię, ewentualnie LLM-classifier jako alternatywa do
-  porównania (temat na Tydzień 5-6, przy okazji porównania modeli).
+  porównania (temat na Sprint 5-6, przy okazji porównania modeli).
 
 ## Rozszerzenie planu — 2026-08-19
 
@@ -184,18 +184,18 @@ etapie, surowy materiał pod przyszłe STAR.
   "eskaluj", trzecia opcja to "sprawdź załącznik, może rozstrzygnie
   niejednoznaczność". Świadomie ograniczone na start do PDF z warstwą
   tekstową (bez OCR obrazów) i tylko do trybu "confidence gate ma wątpliwości",
-  żeby nie rozmywać rdzenia Tygodnia 4 (graf, subagenci, walidacja, HITL).
+  żeby nie rozmywać rdzenia Sprintu 4 (graf, subagenci, walidacja, HITL).
   **Warunek:** skan antywirusowy załącznika (5.6) jest blokujący dla samej
   funkcji (5.5) — żaden plik nie trafia do parsowania/embeddingu przed
   skanem. Wybór narzędzia (lokalny skaner vs. usługa) do rozstrzygnięcia
   przed implementacją — patrz pytanie do użytkownika w tej samej sesji.
-  **Efekt:** TBD — implementacja zaplanowana na Tydzień 4, razem z resztą
+  **Efekt:** TBD — implementacja zaplanowana na Sprint 4, razem z resztą
   warstwy walidacji. Agent "data retrieval" (5.8), który aktywnie
   wykorzystuje treść załącznika w generowanej odpowiedzi (nie tylko do
-  poprawy klasyfikacji), to świadomy follow-up na Tydzień 5+, żeby nie
+  poprawy klasyfikacji), to świadomy follow-up na Sprint 5+, żeby nie
   łączyć dwóch różnych funkcji w jednej iteracji.
 
-## Tydzień 4 (część 1) — załącznik PDF + skan antywirusowy — 2026-08-19
+## Sprint 4 (część 1) — załącznik PDF + skan antywirusowy — 2026-08-19
 
 - **Decyzja:** ClamAV lokalnie (portable, `.clamav/`, gitignored), nie
   VirusTotal API ani uproszczona walidacja typu pliku.
@@ -234,7 +234,7 @@ etapie, surowy materiał pod przyszłe STAR.
   zostanie wywołane.
 
 - **Decyzja:** żywa (nie mockowana) weryfikacja end-to-end na przykładzie
-  celowo dobranym z Tygodnia 3 (`scripts/demo_attachment_pipeline.py`).
+  celowo dobranym ze Sprintu 3 (`scripts/demo_attachment_pipeline.py`).
   **Efekt (realne liczby):** pytanie "Lodówka z nabiałem pokazuje 8 stopni,
   co robię z towarem i co robię z lodówką?" bez załącznika: `confidence=0.33`,
   eskalacja do `inne`. Z załączonym PDF (karta kontroli temperatur, słownictwo
@@ -245,9 +245,9 @@ etapie, surowy materiał pod przyszłe STAR.
   funkcja mechanicznie działa (`used_attachment=True`), ale nie gwarantuje
   rozwiązania niepewności, jeśli treść załącznika słabo pokrywa się z
   przykładami klasyfikatora (patrz znane ograniczenie klasyfikatora,
-  Tydzień 3).
+  Sprint 3).
 
-## Tydzień 4 (część 2) — walidacja, subagenci, graf LangGraph, HITL — 2026-08-19
+## Sprint 4 (część 2) — walidacja, subagenci, graf LangGraph, HITL — 2026-08-19
 
 - **Decyzja:** pozostałe reguły walidacji (PESEL, prompt injection, prośby o
   dane osób trzecich, format numeru zamówienia) jako proste reguły
@@ -266,12 +266,12 @@ etapie, surowy materiał pod przyszłe STAR.
   formatu numeru.
 
 - **Decyzja:** subagenci per kategoria (`agents/subagent.py`) to ten sam kod
-  retrieval+generacji z Tygodnia 2, ale (a) retrieval filtrowany do runbooka
+  retrieval+generacji ze Sprintu 2, ale (a) retrieval filtrowany do runbooka
   danej intencji (`where={"source": ...}` w Chroma) i (b) krótki dopisek do
   system promptu per kategoria (np. BHP → podkreśl pilność, reklamacje →
   sekcja "czego NIE robimy" to twardy zakaz).
   **Dlaczego:** to konkretna, testowalna różnica względem ogólnego RAG z
-  Tygodnia 2 (tam retrieval przeszukiwał cały korpus), a nie 8 kopii tego
+  Sprintu 2 (tam retrieval przeszukiwał cały korpus), a nie 8 kopii tego
   samego kodu z różnymi nazwami plików — uniknięcie duplikacji przy
   zachowaniu ducha "osobny agent per kategoria" z planu.
   **Efekt:** zweryfikowane na żywo — pytanie o pomyłkę dostawcy zwraca
@@ -282,7 +282,7 @@ etapie, surowy materiał pod przyszłe STAR.
   routingu **nad** już istniejącym `classification/pipeline.py`, nie
   przepisanie logiki od nowa w węzłach grafu.
   **Dlaczego:** walidacja+klasyfikacja+gate+załącznik były już napisane i
-  przetestowane jako zwykłe funkcje Pythona (Tydzień 3-4/1) — graf dodaje
+  przetestowane jako zwykłe funkcje Pythona (Sprint 3-4/1) — graf dodaje
   tylko to, czego zwykła funkcja nie potrafi: **pauzę i wznowienie** przez
   `interrupt()`/`Command(resume=...)` dla eskalacji do człowieka, oraz
   routing między węzłem auto-odpowiedzi (subagent) a węzłem HITL.
@@ -294,14 +294,14 @@ etapie, surowy materiał pod przyszłe STAR.
   `thread_id` w configu na cały wątek rozmowy.
 
 - **Znane ograniczenie (uczciwie odnotowane, nie ukryte):** live demo
-  (`scripts/demo_graph.py`) ujawniło żywy przykład problemu z Tygodnia 3 —
+  (`scripts/demo_graph.py`) ujawniło żywy przykład problemu ze Sprintu 3 —
   pytanie "Sanepid zapowiedział kontrolę na jutro, na co mam zwrócić uwagę?"
   zostało błędnie sklasyfikowane jako `hr` (confidence 0.67, powyżej progu),
   więc trafiło do auto-odpowiedzi zamiast eskalacji, a subagent HR
   odpowiedział, że nie ma info o sanepidzie w swoim runbooku — poprawnie
   rozpoznał brak dopasowania kontekstu, ale na złym etapie (powinno było
   eskalować już na etapie gate, nie dopiero w odpowiedzi LLM-a). To pokazuje
-  granicę obecnego klasyfikatora (65% accuracy, Tydzień 3) w praktyce, nie
+  granicę obecnego klasyfikatora (65% accuracy, Sprint 3) w praktyce, nie
   tylko w ewaluacji offline.
   **Możliwe kierunki poprawy (nieuzasadnione jeszcze na tym etapie):**
   więcej przykładów na kategorię, wyższy próg confidence, albo prosty
@@ -309,7 +309,7 @@ etapie, surowy materiał pod przyszłe STAR.
   czy zgłosić brak dopasowania zamiast zgadywać") jako dodatkowa siatka
   bezpieczeństwa nad samym gate.
 
-## Tydzień 5 (część 1) — Streamlit UI — 2026-08-20
+## Sprint 5 (część 1) — Streamlit UI — 2026-08-20
 
 - **Decyzja:** jedna strona Streamlit z dwiema sekcjami (formularz pytania +
   panel HITL), nie osobne widoki dla pracownika i operatora.
@@ -346,13 +346,13 @@ etapie, surowy materiał pod przyszłe STAR.
   z opisem etapu), ale warte odnotowania jako realne ograniczenie przy
   ewentualnym demo na żywo — GPU albo mniejszy model skróciłyby to znacząco.
 
-## Tydzień 5 (część 2) — Langfuse Cloud (observability) — 2026-08-20
+## Sprint 5 (część 2) — Langfuse Cloud (observability) — 2026-08-20
 
 - **Decyzja:** konto Langfuse Cloud (region EU, `cloud.langfuse.com`) założone
   przez użytkownika (nie przeze mnie — zakładanie kont to poza tym, co robię
   automatycznie), klucze API wklejone bezpośrednio do lokalnego `.env`
   (gitignored). Zweryfikowane `auth_check()` przed pisaniem integracji.
-  **Efekt:** `settings.langfuse_*` w `config.py` już istniały z Tygodnia 2 —
+  **Efekt:** `settings.langfuse_*` w `config.py` już istniały ze Sprintu 2 —
   wystarczyło dodać wartości do `.env`.
 
 - **Decyzja:** dwa mechanizmy naraz zamiast jednego — dekorator `@observe()`
@@ -405,7 +405,7 @@ etapie, surowy materiał pod przyszłe STAR.
   **Efekt:** oznaczone jako ❌ w `requirements.md`, nie usunięte z historii
   (żeby było widać, że była to świadoma decyzja, nie przeoczenie).
 
-## Tydzień 5 (część 3) — trwała kolejka HITL — 2026-08-20
+## Sprint 5 (część 3) — trwała kolejka HITL — 2026-08-20
 
 - **Decyzja:** kolejka HITL jako moduł-poziomowy rejestr w pamięci procesu
   (`hitl/queue.py`, słowniki `dict` chronione `threading.Lock`), nie
@@ -446,7 +446,7 @@ etapie, surowy materiał pod przyszłe STAR.
   dokończenia kolejki HITL. Uzasadnienie: patrz sekcja "Rozszerzenie planu"
   wyżej.
 
-## Tydzień 6 — framework ewaluacyjny (RAG + jakość odpowiedzi) — 2026-08-20
+## Sprint 6 — framework ewaluacyjny (RAG + jakość odpowiedzi) — 2026-08-20
 
 - **Decyzja:** trzy niezależne sygnały jakości zamiast jednego (retrieval
   hit-rate, pokrycie słów kluczowych, LLM-as-judge 1-5), świadomie
@@ -465,7 +465,7 @@ etapie, surowy materiał pod przyszłe STAR.
   `agents.subagent.answer()` wywoływane z **poprawną, przypiętą z góry**
   intencją (`evaluation/rag_eval_set.py`, ground truth wyprowadzone ręcznie z
   treści wszystkich 8 runbooków, nie zgadywane). Cel: izolacja jakości
-  RAG+generacji od jakości klasyfikatora, już zmierzonej osobno w Tygodniu 3
+  RAG+generacji od jakości klasyfikatora, już zmierzonej osobno w Sprincie 3
   — inaczej błąd klasyfikatora zaszumiałby wynik ewaluacji RAG.
 
 - **Efekt — realny przebieg na 15 pytaniach (`scripts/evaluate_rag.py`):**
@@ -498,10 +498,10 @@ etapie, surowy materiał pod przyszłe STAR.
     (5/5) obnaża lukę. To najsilniejszy argument za utrzymaniem wielu
     niezależnych sygnałów zamiast jednej "zbiorczej" metryki.
 
-## Szablon na kolejne tygodnie
+## Szablon na kolejne sprinty
 
 ```
-## Tydzień N — YYYY-MM-DD
+## Sprint N — YYYY-MM-DD
 
 - **Decyzja:** ...
   **Dlaczego:** ...

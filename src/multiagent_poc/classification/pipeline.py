@@ -1,6 +1,6 @@
 """Ties validation + classifier + gate + optional attachment together,
 matching docs/sequence_diagram.md end to end (minus RAG/subagent generation
-and HITL, still ahead in Week 4). Stand-in for the LangGraph orchestration —
+and HITL, still ahead in Sprint 4). Stand-in for the LangGraph orchestration —
 small enough to be directly testable before the graph exists.
 
 Order matters, in two ways:

@@ -1,4 +1,4 @@
-"""Week 3: run the intent classifier + confidence gate over the held-out
+"""Sprint 3: run the intent classifier + confidence gate over the held-out
 eval set and report accuracy, plus every misclassification for the log.
 """
 

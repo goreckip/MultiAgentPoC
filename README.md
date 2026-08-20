@@ -68,7 +68,7 @@ Wszystko darmowe.
 
 ## Status
 
-Po Tygodniu 6: wszystkie 7 warstw architektury mają działającą implementację,
+Po Sprincie 6: wszystkie 7 warstw architektury mają działającą implementację,
 zweryfikowaną na żywo, nie tylko testami z mockami. Walidacja → klasyfikacja
 intencji + confidence gate (opcjonalnie wspomagana załącznikiem PDF) →
 subagent per kategoria (RAG filtrowany do właściwego runbooka) albo

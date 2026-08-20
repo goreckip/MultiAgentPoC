@@ -2,7 +2,7 @@
 
 Pełny przepływ pytania użytkownika przez wszystkie 7 warstw architektury
 (patrz [`architecture.md`](architecture.md)). To jest diagram **docelowy** —
-opisuje, jak proces ma działać po ukończeniu Tygodni 3-4, nie stan obecny
+opisuje, jak proces ma działać po ukończeniu Sprintów 3-4, nie stan obecny
 (status implementacji per element — patrz [`requirements.md`](requirements.md)).
 
 Renderuje się natywnie w GitHubie (blok ```mermaid).
@@ -115,7 +115,7 @@ sequenceDiagram
   osobne wywołania `log:`, ale docelowo to pojedynczy trace na całą rozmowę
   (nested spans), nie osobne requesty.
 - Diagram nie pokazuje pętli powtórnego pytania przy niejednoznacznej
-  intencji (dopytanie zamiast eskalacji) — do rozstrzygnięcia w Tygodniu 3
+  intencji (dopytanie zamiast eskalacji) — do rozstrzygnięcia w Sprincie 3
   razem z implementacją confidence gate.
 - **Skan antywirusowy jest blokujący i bezwarunkowy** — żaden załącznik nie
   trafia do parsera PDF, klasyfikatora ani logów Langfuse przed pozytywnym

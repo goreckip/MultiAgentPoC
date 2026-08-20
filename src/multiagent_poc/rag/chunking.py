@@ -1,4 +1,4 @@
-"""Two chunking strategies for runbook markdown, compared in Week 2.
+"""Two chunking strategies for runbook markdown, compared in Sprint 2.
 
 fixed_size_chunks: naive sliding window over raw text, strategy-agnostic to
 document structure. section_chunks: splits on markdown headings (## / ###),

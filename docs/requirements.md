@@ -2,13 +2,13 @@
 
 Legenda: ✅ zrobione i zweryfikowane · 🚧 częściowo / kod napisany, nie w pełni
 zweryfikowany end-to-end · ⬜ nie zaczęte · ❌ świadomie odrzucone z planu
-(z datą i uzasadnieniem w `decision_log.md`). Kolumna "Tydzień" to plan z
-[`../README.md`](../README.md) (mile stone, niekoniecznie kalendarzowy tydzień).
+(z datą i uzasadnieniem w `decision_log.md`). Kolumna "Sprint" to plan z
+[`../README.md`](../README.md) (mile stone, niekoniecznie kalendarzowy sprint).
 MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 1 — Klasyfikacja intencji
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 1.1 | Katalog intencji zdefiniowany (8 procesowych + `inne`) | ✅ | 1 | MVP |
 | 1.2 | Jedno źródło prawdy: intencja ↔ plik runbooka | ✅ | 1 | MVP |
@@ -17,7 +17,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 2 — Confidence gate
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 2.1 | Próg pewności w konfiguracji | ✅ | 1 | MVP |
 | 2.2 | Logika: powyżej progu → auto-odpowiedź | ✅ (`classification/gate.py`) | 3 | MVP |
@@ -27,7 +27,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 3 — RAG nad runbookami
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 3.1 | Mockowe runbooki (min. 5-10 dokumentów, różne kategorie) | ✅ (8 dokumentów) | 1 | MVP |
 | 3.2 | Chunking — strategia fixed-size | ✅ | 2 | MVP |
@@ -40,15 +40,15 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 4 — Subagenci per kategoria + router
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 4.1 | Graf LangGraph (routing między węzłami) | ✅ (`graph/pipeline_graph.py`) | 4 | Stretch |
 | 4.2 | Osobny subagent/prompt per kategoria procesu | ✅ (`agents/subagent.py`, retrieval filtrowany do runbooka + prompt per kategoria) | 4 | Stretch |
-| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ (nie osobno testowane w grafie — dziedziczy ograniczenia klasyfikatora z Tygodnia 3) | 4 | Stretch |
+| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ (nie osobno testowane w grafie — dziedziczy ograniczenia klasyfikatora ze Sprintu 3) | 4 | Stretch |
 
 ## Warstwa 5 — Walidacja danych wejściowych
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 5.1 | Wykrywanie danych wrażliwych w pytaniu (np. PESEL — pytanie 16) | ✅ (regex + suma kontrolna PESEL, `validation/input_validation.py`) | 4 | Stretch |
 | 5.2 | Walidacja formatu numeru zamówienia (pytania 17, 18) | ✅ (flaguje, nie blokuje — patrz decision log) | 4 | Stretch |
@@ -61,7 +61,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 6 — Human-in-the-loop
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 6.1 | Kolejka zatwierdzeń dla eskalacji (niska pewność / `inne`) | ✅ (`hitl/queue.py`, współdzielona między sesjami, zweryfikowana na żywo w dwóch niezależnych kartach przeglądarki) | 4 | Stretch (dodane po planie bazowym) |
 | 6.2 | `interrupt()` + checkpointer w LangGraph | ✅ (`graph/pipeline_graph.py`, zweryfikowane na żywo w `scripts/demo_graph.py`) | 4 | Stretch |
@@ -69,21 +69,21 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 
 ## Warstwa 7 — Observability
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 7.1 | Integracja z Langfuse Cloud (traces, koszty, latencja) | ✅ (`observability/langfuse_client.py`, zweryfikowane realnym trace'em przez API — patrz `decision_log.md`) | 4 | Stretch |
 | 7.2 | Konfiguracja gotowa (klucze w `.env.example`, host cloud) | ✅ | 2 | — |
 
 ## Warstwa 8 — UI i polish
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 8.1 | Streamlit UI (zadawanie pytań, wyświetlanie odpowiedzi) | ✅ (`app.py`, w tym upload PDF i szczegóły techniczne w expanderze) | 5 | Stretch |
 | 8.2 | Testy end-to-end na pełnym pipeline | ✅ (ręczna weryfikacja w przeglądarce: auto-odpowiedź, odrzucenie walidacji, HITL pause/resume — patrz `decision_log.md`) | 5 | MVP (dla samego MVP: klasyfikacja→RAG→odpowiedź) |
 
 ## Warstwa 9 — Ewaluacja i dokumentacja
 
-| # | Wymaganie | Status | Tydzień | Zakres |
+| # | Wymaganie | Status | Sprint | Zakres |
 |---|---|---|---|---|
 | 9.1 | Zestaw pytań testowych (15-20, w tym dwuznaczne i "inne") | ✅ (20 pytań) | 1 | MVP |
 | 9.2 | Log decyzji prowadzony na bieżąco | ✅ (aktualizowany co sesję) | ciągłe | MVP |
@@ -100,30 +100,30 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | I.1 | Repo GitHub podłączone i zsynchronizowane | ✅ | `goreckip/MultiAgentPoC` |
 | I.2 | Środowisko Python działające lokalnie | ✅ | dystrybucja embeddable, MSI nie działał w tym środowisku |
 | I.3 | Ollama zainstalowana i modele pobrane | ✅ | `llama3.1:8b`, `nomic-embed-text` |
-| I.4 | `pytest` przechodzi | ✅ | 32/32 testy (po Tygodniu 4) |
+| I.4 | `pytest` przechodzi | ✅ | 32/32 testy (po Sprincie 4) |
 | I.5 | ClamAV zainstalowane lokalnie (do skanu załączników) | ✅ | portable build, `.clamav/` (gitignored) |
 
 ## Skrócone podsumowanie (na dziś)
 
-- **MVP core + większość stretch celów Tygodnia 4 gotowe:** walidacja → gate
+- **MVP core + większość stretch celów Sprintu 4 gotowe:** walidacja → gate
   → klasyfikacja → (opcjonalnie załącznik) → subagent/RAG albo HITL, spięte w
   jeden graf LangGraph z działającym `interrupt()`/`resume`. Zweryfikowane na
   żywo (`scripts/demo_graph.py`), nie tylko testami z mockami.
 - **Klasyfikator — znana słabość, teraz widoczna też w grafie:** 65% top-1
-  accuracy (Tydzień 3). Live demo grafu ujawniło realny przypadek błędnej
+  accuracy (Sprint 3). Live demo grafu ujawniło realny przypadek błędnej
   klasyfikacji (pytanie o sanepid → `hr` zamiast eskalacji) — uczciwie
   udokumentowane w `decision_log.md`, nie ukryte. Pytania bezpieczeństwa
   (dane wrażliwe/prompt injection/spoza katalogu) nadal 100% poprawnie
   odrzucane/eskalowane.
 - **Wszystkie 7 warstw architektury mają teraz działającą implementację**
-  (Langfuse jako ostatnia, Tydzień 5 część 2) — zweryfikowana realnym
+  (Langfuse jako ostatnia, Sprint 5 część 2) — zweryfikowana realnym
   trace'em pobranym z powrotem przez API Langfuse, nie tylko "wysłane i mam
   nadzieję że doszło".
-- **Kolejka HITL dokończona** (Tydzień 5 część 3) — współdzielona między
+- **Kolejka HITL dokończona** (Sprint 5 część 3) — współdzielona między
   sesjami/użytkownikami (moduł `hitl/queue.py`), zweryfikowana na żywo w
   dwóch niezależnych kartach przeglądarki. Uproszczenie: w pamięci procesu,
   nie w trwałej bazie — patrz `decision_log.md`.
-- **Framework ewaluacyjny dokończony** (Tydzień 6) — trzy niezależne sygnały
+- **Framework ewaluacyjny dokończony** (Sprint 6) — trzy niezależne sygnały
   (retrieval hit-rate, keywords, LLM-judge) na 15 pytaniach, ground truth
   wyprowadzone ręcznie z treści wszystkich runbooków. Realny wynik ujawnił
   konkretny przypadek błędu retrievalu ukrytego przez przekonujący ton

@@ -1,4 +1,4 @@
-"""Week 6: evaluation framework for RAG retrieval + answer quality.
+"""Sprint 6: evaluation framework for RAG retrieval + answer quality.
 
 Three complementary signals per question (see rag_eval_set.py for ground
 truth and judge.py for the LLM-judge caveat):

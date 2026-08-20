@@ -25,7 +25,7 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 6. Human-in-the-loop (`interrupt()` w LangGraph + współdzielona kolejka) — ✅
 7. Observability (Langfuse Cloud, free tier) — ✅
 
-## Co istnieje dzisiaj (2026-08-20, po Tygodniu 6)
+## Co istnieje dzisiaj (2026-08-20, po Sprincie 6)
 
 ### Zaimplementowane i przetestowane
 
@@ -47,10 +47,10 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Eksperyment porównawczy (klasyfikator) | [`scripts/evaluate_classifier.py`](../scripts/evaluate_classifier.py) | Uruchamia klasyfikator + gate na całym zbiorze ewaluacyjnym, raportuje trafność i każdą pomyłkę. |
 | Skan antywirusowy załącznika | [`src/multiagent_poc/validation/attachment_scan.py`](../src/multiagent_poc/validation/attachment_scan.py) | Wywołuje lokalny `clamscan.exe` (ClamAV), blokujące i bezwarunkowe przed jakimkolwiek parsowaniem. |
 | Parser PDF | [`src/multiagent_poc/validation/attachment.py`](../src/multiagent_poc/validation/attachment.py) | Ekstrakcja tekstu (pypdf), tylko warstwa tekstowa, bez OCR. |
-| Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik: reklasyfikacja z treścią PDF tylko gdy pytanie samo w sobie miało zbyt niską pewność. Zastępczo za graf LangGraph do czasu Tygodnia 4/2. |
+| Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik: reklasyfikacja z treścią PDF tylko gdy pytanie samo w sobie miało zbyt niską pewność. Zastępczo za graf LangGraph do czasu Sprintu 4/2. |
 | Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
 | Walidacja danych wejściowych | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) | PESEL (regex + suma kontrolna), prompt injection, prośby o dane osób trzecich → twardy odrzut; zły format numeru zamówienia → flaga, nie blokada. |
-| Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja z Tygodnia 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
+| Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja ze Sprintu 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
 | Graf LangGraph (routing + HITL) | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) | Spina walidację+klasyfikację+gate+załącznik (`classification/pipeline.py`) z subagentem albo węzłem eskalacji przez `interrupt()`/`Command(resume=...)`, z `MemorySaver` jako checkpointerem. |
 | Demo grafu end-to-end (na żywo) | [`scripts/demo_graph.py`](../scripts/demo_graph.py) | Trzy realne przypadki: auto-odpowiedź, odrzucenie walidacji, eskalacja z pauzą i wznowieniem HITL. |
 | Streamlit UI | [`app.py`](../app.py) | Formularz pytania (+ opcjonalny upload PDF), panel HITL operatora, historia rozmowy ze szczegółami technicznymi. Jedna strona, dwie sekcje — patrz decision log po uzasadnienie. |
@@ -63,7 +63,7 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 
 **Zweryfikowane działanie:** `pytest` (42/42 testy), pełny graf na żywo
 (auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
-patrz wpisy "Tydzień 3", "Tydzień 4" i "Tydzień 5" w `decision_log.md`, w tym
+patrz wpisy "Sprint 3", "Sprint 4" i "Sprint 5" w `decision_log.md`, w tym
 uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live demo
 grafu, realny trace pobrany z powrotem przez Langfuse API (`lf.api.trace.get(...)`)
 potwierdzający poprawne zagnieżdżenie spanów i przechwycone tokeny/latencję,
@@ -82,5 +82,5 @@ Cloud (free tier — działa), Streamlit (UI — działa, `app.py`).
 Python postawiony jako dystrybucja "embeddable" (`.python/`, gitignored) —
 standardowy instalator MSI nie działał w tym środowisku (usługa Windows
 Installer nie miała dostępu do plików tymczasowych). Szczegóły i obejście w
-`decision_log.md` (Tydzień 2). Uruchamianie kodu: `.python/python.exe -m ...`
+`decision_log.md` (Sprint 2). Uruchamianie kodu: `.python/python.exe -m ...`
 zamiast `python -m ...`, dopóki `.python/Scripts` nie jest dodane do PATH.

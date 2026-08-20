@@ -1,6 +1,6 @@
 """Index runbooks into Chroma using either chunking strategy.
 
-Two separate collections (one per strategy) so Week 2's retrieval comparison
+Two separate collections (one per strategy) so Sprint 2's retrieval comparison
 can query both side by side without re-indexing.
 """
 

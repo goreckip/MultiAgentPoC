@@ -1,4 +1,4 @@
-# Pytania testowe (Tydzień 3 — klasyfikacja intencji + confidence gate)
+# Pytania testowe (Sprint 3 — klasyfikacja intencji + confidence gate)
 
 Zestaw roboczy, do rozbudowy. Kolumna "oczekiwana intencja" to etykieta referencyjna
 do liczenia accuracy klasyfikatora; "typ" oznacza cel testu.
@@ -31,6 +31,6 @@ do liczenia accuracy klasyfikatora; "typ" oznacza cel testu.
 - Pytania 3, 10, 13 celowo testują routing między subagentami (do kogo trafia pytanie
   zazębiające się z dwóch kategorii).
 - Pytania 4/5 to para granicznych wartości do testu progu kwotowego z `03_platnosci_kasa.md`.
-- Pytania 16, 19, 20 to materiał pod warstwę walidacji danych wejściowych (Tydzień 4) —
+- Pytania 16, 19, 20 to materiał pod warstwę walidacji danych wejściowych (Sprint 4) —
   nie pod klasyfikator intencji per se.
-- Do rozbudowy do 25-30 pytań po zaimplementowaniu klasyfikatora (Tydzień 3).
+- Do rozbudowy do 25-30 pytań po zaimplementowaniu klasyfikatora (Sprint 3).

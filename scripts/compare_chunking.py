@@ -1,4 +1,4 @@
-"""Week 2 experiment: compare fixed-size vs section chunking retrieval quality
+"""Sprint 2 experiment: compare fixed-size vs section chunking retrieval quality
 on the example question from docs/runbooks/README.md.
 """
 

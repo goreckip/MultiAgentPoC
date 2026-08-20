@@ -30,7 +30,7 @@ Każdy plik ma jednolitą strukturę:
 - Ostatnia sekcja to zwykle eskalacja/kontakt — dobry test na pytania graniczne
   typu "kiedy mam to zgłosić wyżej", które wymagają połączenia kontekstu z kilku sekcji.
 
-Sugerowany eksperyment z planu (tydzień 2): porównaj retrieval dla pytania w stylu
+Sugerowany eksperyment z planu (sprint 2): porównaj retrieval dla pytania w stylu
 *"dostawca przywiózł inny towar niż zamówiony, kierowca już odjechał, co robię?"*
 między chunkingiem fixed-size (np. 500 znaków, overlap 50) a chunkingiem po `##`/`###`.
 Ten konkretny przypadek (sekcja 4.3 w `01_dostawy.md`) jest krótki i osadzony w
@@ -48,10 +48,10 @@ kontekście sekcji nadrzędnej — dobry kandydat na pokazanie różnicy w jako�
 - Sekcje "Czego NIE robimy" (`02_reklamacje.md`) — sprawdzają, czy model nie
   ignoruje negatywnych instrukcji przy generacji odpowiedzi.
 
-## Do zrobienia dalej (zgodnie z planem, tydzień 1)
+## Do zrobienia dalej (zgodnie z planem, sprint 1)
 
 - [ ] Zdefiniować finalny katalog intencji w kodzie (JSON/enum) — ta tabela jako punkt wyjścia.
 - [ ] Przygotować 15–20 pytań testowych (w tym kilka celowo dwuznacznych i kilka
-      spoza katalogu, kategoria "inne") na testy z tygodnia 3.
+      spoza katalogu, kategoria "inne") na testy z sprintu 3.
 - [ ] Zdecydować o embeddingu do klasyfikacji intencji (lokalny przez Ollama vs. lekki
       model klasyfikujący) — do logu decyzji.

@@ -1,7 +1,7 @@
 """Per-category subagents (architecture layer 4).
 
 Each subagent is the same retrieval+generation code (rag/retrieval.py) but
-scoped two ways that generic RAG wasn't in Week 2:
+scoped two ways that generic RAG wasn't in Sprint 2:
 1. Retrieval is filtered to *only* that intent's own runbook (Chroma `where`
    filter on the section collection), not the whole corpus — a "dostawy"
    question should never accidentally retrieve a BHP chunk just because it

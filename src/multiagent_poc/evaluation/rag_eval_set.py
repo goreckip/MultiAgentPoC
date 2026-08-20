@@ -5,7 +5,7 @@ questions from classification/eval_set.py that have an in-catalog answer
 
 Deliberately bypasses the classifier: each entry pins the *correct* intent,
 so scripts/evaluate_rag.py tests retrieval+generation quality in isolation
-from classifier accuracy (already evaluated separately in Week 3). For the
+from classifier accuracy (already evaluated separately in Sprint 3). For the
 three questions with two acceptable intents in eval_set.py (ambiguous
 by design), `intent` picks one as the primary target to evaluate against —
 noted per entry.
