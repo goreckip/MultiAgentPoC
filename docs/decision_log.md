@@ -498,6 +498,66 @@ etapie, surowy materiał pod przyszłe STAR.
     (5/5) obnaża lukę. To najsilniejszy argument za utrzymaniem wielu
     niezależnych sygnałów zamiast jednej "zbiorczej" metryki.
 
+## Sprint 7 — drugi agent: drafting agent — 2026-08-20
+
+- **Decyzja:** analiza kategorii przed implementacją — 7 z 8 kategorii ma
+  sensowny use case na dokument (dostawy, reklamacje, płatności, BHP, HR,
+  awarie techniczne, skargi klienta), `higiena` świadomie pominięta (to
+  kategoria odhaczania checklist/rejestrów zgodności, nie korespondencji).
+  **Efekt:** `DOCUMENT_TEMPLATES` w `agents/drafting_agent.py` obejmuje 7
+  kategorii, `Intent.HIGIENA` i `Intent.INNE` celowo nieobecne.
+
+- **Decyzja:** drugi agent (`agents/drafting_agent.py`) reużywa chunków już
+  pobranych przez `subagent.answer()` zamiast odpytywać Chroma drugi raz.
+  **Dlaczego:** ten sam kontekst proceduralny powinien grounding'ować
+  zarówno odpowiedź, jak i dokument — ponowny retrieval byłby zbędnym
+  kosztem i ryzykiem rozjazdu (dwa różne zestawy chunków dla tego samego
+  pytania). `AgentAnswer.chunks` (dodane w Sprincie 6 pod evaluation)
+  okazało się przydatne też tutaj.
+  **Efekt:** `AgentAnswer` służy teraz dwóm różnym agentom jako most
+  kontekstu, bez dodatkowego wywołania embeddingów.
+
+- **Decyzja:** brakujące pola w dokumencie → jawny placeholder
+  `[uzupełnij: nazwa_pola]`, nie zgadywanie.
+  **Dlaczego:** dokument urzędowy/zgłoszeniowy z halucynowanymi danymi
+  (błędny numer, zmyślona data) jest gorszy niż pusty — łatwiej zauważyć
+  brak niż błąd. Ten sam duch co `ANSWER_SYSTEM_PROMPT` w RAG (nie zgaduj
+  spoza kontekstu).
+  **Efekt (zweryfikowane na żywo):** dla pytania o dostawy z podanym
+  numerem zamówienia model poprawnie wstawił numer i poprawnie
+  placeholderował brakującego dostawcę/datę. Zaobserwowano też realną wadę:
+  dla karty zdarzenia BHP model **pomylił rok w dacie** (wstawił 2023
+  zamiast bieżącej daty — nie ma dostępu do informacji "dzisiaj") i
+  **częściowo zdublował pole** (wypełnił opis, a mimo to dopisał obok
+  `[uzupełnij: opis_zdarzenia]`) — niespójność instruction-following, nie
+  ukryta, lecz odnotowana jako znane ograniczenie do ewentualnej poprawy
+  promptu (np. jawne przekazanie bieżącej daty do kontekstu).
+
+- **Decyzja:** kategorie wrażliwe (BHP, HR) — dokument nigdy nie trafia do
+  pracownika bezpośrednio, zawsze przez tę samą kolejkę HITL co eskalacje,
+  rozszerzoną o `kind="document_review"` (`hitl/queue.py`).
+  **Dlaczego:** spójne z filozofią projektu — confidence gate też wybiera
+  bezpieczeństwo ponad automatyzację. Karta wypadku BHP i pismo kadrowe
+  (np. wypowiedzenie) to dokumenty o realnych konsekwencjach prawnych/
+  bezpieczeństwa; błąd modelu (patrz wyżej — pomylona data) nie powinien
+  nigdy trafić do systemu bez ludzkiego przeglądu.
+  **Efekt (zweryfikowane na żywo end-to-end w przeglądarce):** pytanie BHP
+  → subagent odpowiada normalnie → szkic dokumentu trafia do kolejki HITL
+  jako `document_review`, nie jako zwykła eskalacja → operator widzi i
+  edytuje treść w tym samym panelu, zatwierdza → pracownik dostaje **i**
+  odpowiedź proceduralną, **i** zatwierdzony dokument w tej samej rozmowie
+  (`draft_text` przeżywa pauzę/wznowienie grafu obok `answer`).
+
+- **Decyzja:** graf rozgałęzia się **po** `auto_answer_node`, nie równolegle
+  do niego — `draft_document()` wywoływane tylko gdy pytanie w ogóle
+  dostało auto-odpowiedź (nie dla eskalacji/odrzuceń).
+  **Dlaczego:** nie ma sensu generować dokumentu dla pytania, które i tak
+  idzie do człowieka (eskalacja) albo zostało odrzucone przez walidację —
+  oszczędność jednego zbędnego wywołania LLM w tych ścieżkach.
+  **Efekt:** `route_after_auto_answer` — `"document_review"` tylko gdy
+  `draft_pending_review=True`, inaczej prosto do `END` z dokumentem już w
+  stanie (widoczny w UI od razu, bez pauzy).
+
 ## Szablon na kolejne sprinty
 
 ```

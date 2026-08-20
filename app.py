@@ -53,6 +53,8 @@ def _meta_from_result(result: dict) -> dict:
         "rejected": result.get("rejected"),
         "used_attachment": result.get("used_attachment"),
         "sources": result.get("sources") or [],
+        "draft_doc_type": result.get("draft_doc_type"),
+        "draft_text": result.get("draft_text"),
     }
 
 
@@ -72,7 +74,12 @@ def _submit_question(question: str, attachment_path: Path | None):
 
     if "__interrupt__" in result:
         payload = result["__interrupt__"][0].value
-        hitl_queue.add_pending(thread_id, question, payload.get("reason"))
+        if payload.get("kind") == hitl_queue.KIND_DOCUMENT_REVIEW:
+            hitl_queue.add_pending_document_review(
+                thread_id, question, payload.get("document_type"), payload.get("document_text")
+            )
+        else:
+            hitl_queue.add_pending(thread_id, question, payload.get("reason"))
         st.session_state.own_pending = {"thread_id": thread_id, "question": question}
         return
 
@@ -85,16 +92,15 @@ def _check_own_pending_resolution():
     if result is None:
         st.toast("Jeszcze brak odpowiedzi operatora.")
         return
-    st.session_state.history.append(
-        {"question": pending["question"], "answer": result.get("answer"), "meta": {"resolved_by": "człowiek (HITL)", "sources": []}}
-    )
+    meta = {"resolved_by": "człowiek (HITL)", "sources": [], "draft_doc_type": result.get("draft_doc_type"), "draft_text": result.get("draft_text")}
+    st.session_state.history.append({"question": pending["question"], "answer": result.get("answer"), "meta": meta})
     st.session_state.own_pending = None
 
 
-def _resolve_escalation(item: hitl_queue.PendingEscalation, human_answer: str):
+def _resolve_pending_item(item: hitl_queue.PendingEscalation, human_input: str):
     graph = get_graph()
     config = {"configurable": {"thread_id": item.thread_id}}
-    result = invoke_graph(graph, Command(resume=human_answer), config=config)
+    result = invoke_graph(graph, Command(resume=human_input), config=config)
     hitl_queue.set_resolved(item.thread_id, result)
     hitl_queue.pop_pending(item.thread_id)
 
@@ -133,24 +139,38 @@ else:
 
 st.divider()
 st.subheader("2. Panel HITL (rola: operator/kierownik)")
-st.caption("Kolejka współdzielona — widoczne są eskalacje od wszystkich pracowników, nie tylko z tej sesji.")
+st.caption(
+    "Kolejka współdzielona — widoczne są eskalacje i dokumenty do zatwierdzenia od "
+    "wszystkich pracowników, nie tylko z tej sesji."
+)
 
 pending_items = hitl_queue.list_pending()
 if not pending_items:
-    st.caption("Brak pytań oczekujących na eskalację.")
+    st.caption("Brak pozycji oczekujących w kolejce.")
 else:
-    st.write(f"**{len(pending_items)}** pytanie(-a) w kolejce.")
+    st.write(f"**{len(pending_items)}** pozycja(-e) w kolejce.")
     for item in pending_items:
         with st.container(border=True):
-            st.warning(f"**Eskalowane pytanie:** {item.question}")
-            st.caption(f"Powód eskalacji: {item.reason} — zgłoszone: {item.created_at.strftime('%H:%M:%S')}")
-            with st.form(f"hitl_form_{item.thread_id}"):
-                human_answer = st.text_area("Odpowiedź operatora", key=f"answer_{item.thread_id}")
-                resolve = st.form_submit_button("Wyślij odpowiedź do pracownika")
-            if resolve and human_answer.strip():
-                with st.spinner("Wznawianie grafu..."):
-                    _resolve_escalation(item, human_answer.strip())
-                st.rerun()
+            if item.kind == hitl_queue.KIND_DOCUMENT_REVIEW:
+                st.warning(f"**Dokument do zatwierdzenia** ({item.document_type}) — pytanie: {item.question}")
+                st.caption(f"Zgłoszono: {item.created_at.strftime('%H:%M:%S')}")
+                with st.form(f"hitl_form_{item.thread_id}"):
+                    edited_text = st.text_area("Treść dokumentu (możesz edytować)", value=item.document_text, key=f"doc_{item.thread_id}", height=200)
+                    resolve = st.form_submit_button("Zatwierdź dokument")
+                if resolve and edited_text.strip():
+                    with st.spinner("Wznawianie grafu..."):
+                        _resolve_pending_item(item, edited_text.strip())
+                    st.rerun()
+            else:
+                st.warning(f"**Eskalowane pytanie:** {item.question}")
+                st.caption(f"Powód eskalacji: {item.reason} — zgłoszone: {item.created_at.strftime('%H:%M:%S')}")
+                with st.form(f"hitl_form_{item.thread_id}"):
+                    human_answer = st.text_area("Odpowiedź operatora", key=f"answer_{item.thread_id}")
+                    resolve = st.form_submit_button("Wyślij odpowiedź do pracownika")
+                if resolve and human_answer.strip():
+                    with st.spinner("Wznawianie grafu..."):
+                        _resolve_pending_item(item, human_answer.strip())
+                    st.rerun()
 
 st.divider()
 st.subheader("Historia rozmowy (ta sesja)")
@@ -161,6 +181,9 @@ else:
     for item in reversed(st.session_state.history):
         st.markdown(f"**Q:** {item['question']}")
         st.markdown(f"**A:** {item['answer']}")
+        if item["meta"] and item["meta"].get("draft_text"):
+            with st.expander(f"📄 Wygenerowany dokument: {item['meta'].get('draft_doc_type')}"):
+                st.text(item["meta"]["draft_text"])
         if item["meta"]:
             with st.expander("Szczegóły techniczne"):
                 meta = item["meta"]

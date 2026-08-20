@@ -45,3 +45,24 @@ def test_resolved_result_is_delivered_once():
 
 def test_take_resolved_returns_none_when_nothing_pending():
     assert hitl_queue.take_resolved("does-not-exist") is None
+
+
+def test_add_pending_document_review_carries_document_fields():
+    hitl_queue.add_pending_document_review("doc1", "pytanie o wypadek", "Karta zdarzenia BHP", "SZKIC dokumentu")
+
+    item = next(p for p in hitl_queue.list_pending() if p.thread_id == "doc1")
+    assert item.kind == hitl_queue.KIND_DOCUMENT_REVIEW
+    assert item.document_type == "Karta zdarzenia BHP"
+    assert item.document_text == "SZKIC dokumentu"
+
+    hitl_queue.pop_pending("doc1")
+
+
+def test_add_pending_defaults_to_escalation_kind():
+    hitl_queue.add_pending("esc1", "pytanie", "powód")
+
+    item = next(p for p in hitl_queue.list_pending() if p.thread_id == "esc1")
+    assert item.kind == hitl_queue.KIND_ESCALATION
+    assert item.document_text is None
+
+    hitl_queue.pop_pending("esc1")

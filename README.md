@@ -22,13 +22,18 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
    [`src/multiagent_poc/intents.py`](src/multiagent_poc/intents.py).
 2. **Confidence gate** — poniżej progu pewności → dopytanie / eskalacja, nie halucynacja.
 3. **RAG nad runbookami** — [`docs/runbooks/`](docs/runbooks/), Chroma jako wektorowa baza.
-4. **Subagenci per kategoria procesu**, koordynowani przez agenta-router (LangGraph).
+4. **Dwa agenty per kategoria procesu**, koordynowani przez agenta-router (LangGraph):
+   subagent odpowiadający na pytanie ([`agents/subagent.py`](src/multiagent_poc/agents/subagent.py))
+   i drafting agent przygotowujący gotowy dokument/zgłoszenie
+   ([`agents/drafting_agent.py`](src/multiagent_poc/agents/drafting_agent.py), 7/8 kategorii —
+   brakujące dane oznacza jawnym placeholderem, nie zgaduje).
 5. **Walidacja danych wejściowych** — dane wrażliwe, format numeru zamówienia,
    uprawnienia do kategorii pytań, oraz opcjonalny załącznik PDF (np. zamówienie)
    jako dodatkowy kontekst, gdy klasyfikacja tekstowa ma zbyt niską pewność —
    zawsze poprzedzony skanem antywirusowym (ClamAV, lokalnie).
-6. **Human-in-the-loop** — pytania eskalowane (niska pewność / kategoria `inne`) trafiają
-   do **współdzielonej kolejki** ([`src/multiagent_poc/hitl/queue.py`](src/multiagent_poc/hitl/queue.py)),
+6. **Human-in-the-loop** — pytania eskalowane (niska pewność / kategoria `inne`) **oraz
+   dokumenty z kategorii wrażliwych (BHP, HR)** trafiają do **współdzielonej kolejki**
+   ([`src/multiagent_poc/hitl/queue.py`](src/multiagent_poc/hitl/queue.py)),
    widocznej dla operatora niezależnie od tego, który pracownik zadał pytanie —
    nie tylko z jego własnej sesji. Zaimplementowane przez `interrupt()` + checkpointer
    w LangGraph — graf zatrzymuje się na węźle i czeka na input człowieka.
@@ -50,7 +55,7 @@ src/multiagent_poc/
   config.py          — konfiguracja (Ollama/Chroma/Langfuse)
   rag/                — chunking, indeksacja, retrieval
   classification/     — klasyfikator intencji, confidence gate, pipeline z załącznikiem
-  agents/             — subagenci per kategoria
+  agents/             — subagent (odpowiedzi) + drafting agent (dokumenty) per kategoria
   graph/              — graf LangGraph (routing, confidence gate, HITL interrupt)
   validation/         — walidacja danych wejściowych, skan AV i parser PDF załącznika
   observability/      — integracja Langfuse (@observe, CallbackHandler)
@@ -68,20 +73,25 @@ Wszystko darmowe.
 
 ## Status
 
-Po Sprincie 6: wszystkie 7 warstw architektury mają działającą implementację,
-zweryfikowaną na żywo, nie tylko testami z mockami. Walidacja → klasyfikacja
-intencji + confidence gate (opcjonalnie wspomagana załącznikiem PDF) →
-subagent per kategoria (RAG filtrowany do właściwego runbooka) albo
-eskalacja do człowieka przez `interrupt()`/`resume` do współdzielonej
-kolejki HITL w Streamlit ([`app.py`](app.py)) — zweryfikowanej w dwóch
-niezależnych kartach przeglądarki (operator widzi eskalacje od innych
-pracowników, nie tylko własne). Każde pytanie generuje zagnieżdżony trace w
-Langfuse Cloud (model, tokeny, latencja, koszt), pobrany z powrotem przez API
-jako dowód, że dotarł. Framework ewaluacyjny (`scripts/evaluate_rag.py`)
-zmierzył trafność RAG na trzech niezależnych sygnałach (retrieval hit-rate
-86%, pokrycie słów kluczowych 38%, LLM-judge 4.67/5) i ujawnił konkretny
-przypadek błędu retrievalu ukrytego przez przekonujący ton odpowiedzi —
-patrz [`docs/decision_log.md`](docs/decision_log.md). Zostało: case study.
+Po Sprincie 7: wszystkie 7 warstw architektury mają działającą implementację,
+zweryfikowaną na żywo, nie tylko testami z mockami, z **dwoma agentami per
+kategoria** (subagent odpowiedzi + drafting agent dokumentów). Walidacja →
+klasyfikacja intencji + confidence gate (opcjonalnie wspomagana załącznikiem
+PDF) → subagent (RAG filtrowany do właściwego runbooka) → opcjonalnie
+drafting agent (dokument, z placeholderami zamiast zgadywania brakujących
+danych) → dla kategorii wrażliwych (BHP, HR) zawsze przez tę samą
+współdzieloną kolejkę HITL co eskalacje, zanim trafi do pracownika.
+Zweryfikowane end-to-end w przeglądarce: dokument BHP poprawnie trafił do
+kolejki jako osobny typ ("dokument do zatwierdzenia"), operator zatwierdził,
+pracownik dostał odpowiedź **i** dokument razem — złapano też realną
+halucynację modelu (błędny rok w dacie), udokumentowaną, nie ukrytą.
+Każde pytanie generuje zagnieżdżony trace w Langfuse Cloud (model, tokeny,
+latencja, koszt), pobrany z powrotem przez API jako dowód, że dotarł.
+Framework ewaluacyjny (`scripts/evaluate_rag.py`) zmierzył trafność RAG na
+trzech niezależnych sygnałach (retrieval hit-rate 86%, pokrycie słów
+kluczowych 38%, LLM-judge 4.67/5) i ujawnił konkretny przypadek błędu
+retrievalu ukrytego przez przekonujący ton odpowiedzi — patrz
+[`docs/decision_log.md`](docs/decision_log.md). Zostało: case study.
 Pełny status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
 
 ## Uruchomienie UI

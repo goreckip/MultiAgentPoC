@@ -12,6 +12,12 @@ Deliberately in-memory, not a database — same simplification as LangGraph's
 MemorySaver checkpointer (state doesn't survive a process restart). A real
 deployment would back this with Redis/Postgres so the queue survives
 restarts and works across multiple app instances; out of scope for this PoC.
+
+Two kinds of pending item share the same queue: "escalation" (confidence
+gate couldn't route the question) and "document_review" (drafting_agent
+produced a document for a category — BHP, HR — that always needs a human
+look before it reaches the employee). Same underlying mechanism
+(interrupt()/resume on a paused thread), different payload shape.
 """
 
 from dataclasses import dataclass, field
@@ -20,12 +26,18 @@ import threading
 
 _lock = threading.Lock()
 
+KIND_ESCALATION = "escalation"
+KIND_DOCUMENT_REVIEW = "document_review"
+
 
 @dataclass
 class PendingEscalation:
     thread_id: str
     question: str
     reason: str
+    kind: str = KIND_ESCALATION
+    document_type: str | None = None
+    document_text: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -36,6 +48,18 @@ _resolved: dict[str, dict] = {}
 def add_pending(thread_id: str, question: str, reason: str) -> None:
     with _lock:
         _pending[thread_id] = PendingEscalation(thread_id=thread_id, question=question, reason=reason)
+
+
+def add_pending_document_review(thread_id: str, question: str, document_type: str, document_text: str) -> None:
+    with _lock:
+        _pending[thread_id] = PendingEscalation(
+            thread_id=thread_id,
+            question=question,
+            reason=f"dokument do zatwierdzenia: {document_type}",
+            kind=KIND_DOCUMENT_REVIEW,
+            document_type=document_type,
+            document_text=document_text,
+        )
 
 
 def list_pending() -> list[PendingEscalation]:

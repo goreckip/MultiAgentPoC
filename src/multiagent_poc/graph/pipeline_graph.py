@@ -15,6 +15,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
+from multiagent_poc.agents.drafting_agent import draft_document
 from multiagent_poc.agents.subagent import answer as agent_answer
 from multiagent_poc.classification.pipeline import handle_question
 from multiagent_poc.graph.state import GraphState
@@ -49,14 +50,39 @@ def route_after_classify(state: GraphState) -> str:
 
 
 def auto_answer_node(state: GraphState) -> dict:
-    result = agent_answer(state["question"], Intent(state["intent"]))
-    return {"answer": result.text, "sources": result.sources}
+    intent = Intent(state["intent"])
+    result = agent_answer(state["question"], intent)
+    update = {"answer": result.text, "sources": result.sources, "draft_pending_review": False}
+
+    draft = draft_document(state["question"], intent, result.chunks)
+    if draft is not None:
+        update["draft_doc_type"] = draft.doc_type
+        update["draft_text"] = draft.text
+        update["draft_pending_review"] = draft.requires_review
+
+    return update
+
+
+def route_after_auto_answer(state: GraphState) -> str:
+    return "document_review" if state.get("draft_pending_review") else "end"
+
+
+def document_review_node(state: GraphState) -> dict:
+    approved_text = interrupt(
+        {
+            "kind": "document_review",
+            "question": state["question"],
+            "document_type": state.get("draft_doc_type"),
+            "document_text": state.get("draft_text"),
+        }
+    )
+    return {"draft_text": approved_text, "draft_pending_review": False}
 
 
 def escalate_node(state: GraphState) -> dict:
     confidence = state.get("confidence")
     reason = f"confidence={confidence:.2f} < próg" if confidence is not None else "brak dopasowania do katalogu intencji"
-    human_answer = interrupt({"question": state["question"], "reason": reason})
+    human_answer = interrupt({"kind": "escalation", "question": state["question"], "reason": reason})
     return {"answer": human_answer, "sources": []}
 
 
@@ -68,6 +94,7 @@ def build_graph():
     graph = StateGraph(GraphState)
     graph.add_node("classify", classify_node)
     graph.add_node("auto_answer", auto_answer_node)
+    graph.add_node("document_review", document_review_node)
     graph.add_node("escalate", escalate_node)
     graph.add_node("rejected", rejected_node)
 
@@ -77,7 +104,12 @@ def build_graph():
         route_after_classify,
         {"auto_answer": "auto_answer", "escalate": "escalate", "rejected": "rejected"},
     )
-    graph.add_edge("auto_answer", END)
+    graph.add_conditional_edges(
+        "auto_answer",
+        route_after_auto_answer,
+        {"document_review": "document_review", "end": END},
+    )
+    graph.add_edge("document_review", END)
     graph.add_edge("escalate", END)
     graph.add_edge("rejected", END)
 

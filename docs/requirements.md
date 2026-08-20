@@ -45,6 +45,8 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 4.1 | Graf LangGraph (routing między węzłami) | ✅ (`graph/pipeline_graph.py`) | 4 | Stretch |
 | 4.2 | Osobny subagent/prompt per kategoria procesu | ✅ (`agents/subagent.py`, retrieval filtrowany do runbooka + prompt per kategoria) | 4 | Stretch |
 | 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ (nie osobno testowane w grafie — dziedziczy ograniczenia klasyfikatora ze Sprintu 3) | 4 | Stretch |
+| 4.4 | Drugi agent — drafting agent (dokumenty per kategoria) | ✅ (`agents/drafting_agent.py`, 7/8 kategorii, reużywa chunków z `subagent.answer()`; zweryfikowane na żywo w przeglądarce) | 7 | Stretch (dodane po planie bazowym, 2026-08-20) |
+| 4.5 | Kategorie wrażliwe (BHP, HR) — dokument zawsze przez HITL przed dostarczeniem | ✅ (`hitl/queue.py` — `kind="document_review"`, zweryfikowane na żywo end-to-end) | 7 | Stretch |
 
 ## Warstwa 5 — Walidacja danych wejściowych
 
@@ -128,6 +130,12 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
   wyprowadzone ręcznie z treści wszystkich runbooków. Realny wynik ujawnił
   konkretny przypadek błędu retrievalu ukrytego przez przekonujący ton
   odpowiedzi, niewidoczny dla samego LLM-judge — patrz `decision_log.md`.
+- **Drugi agent dodany** (Sprint 7) — `drafting_agent.py` generuje gotowe
+  dokumenty (zgłoszenia, karty zdarzeń, pisma) dla 7 z 8 kategorii, reużywa
+  kontekstu RAG z `subagent.answer()`. Kategorie wrażliwe (BHP, HR) zawsze
+  przechodzą przez tę samą kolejkę HITL co eskalacje, zanim dokument trafi
+  do pracownika — zweryfikowane na żywo end-to-end w przeglądarce, łącznie
+  ze złapaną na żywo halucynacją daty w dokumencie BHP (patrz `decision_log.md`).
 - **Zostało realnie do zrobienia:** routing przy jawnie zazębiających się
   kategoriach, case study. Porównanie LangChain vs Pydantic AI świadomie
   odrzucone z planu (patrz 9.7).

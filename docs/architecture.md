@@ -20,12 +20,12 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 1. Klasyfikacja intencji (9 kategorii: 8 procesowych + `inne`) — ✅
 2. Confidence gate (próg pewności → auto-odpowiedź vs. eskalacja) — ✅
 3. RAG nad runbookami (Chroma + Ollama) — ✅
-4. Subagenci per kategoria procesu, koordynowani przez agenta-router (LangGraph) — ✅
+4. Subagenci per kategoria procesu (odpowiedzi + drafting agent — dokumenty), koordynowani przez agenta-router (LangGraph) — ✅
 5. Walidacja danych wejściowych (dane wrażliwe, format numeru zamówienia, uprawnienia, załącznik PDF + skan AV) — ✅
 6. Human-in-the-loop (`interrupt()` w LangGraph + współdzielona kolejka) — ✅
 7. Observability (Langfuse Cloud, free tier) — ✅
 
-## Co istnieje dzisiaj (2026-08-20, po Sprincie 6)
+## Co istnieje dzisiaj (2026-08-20, po Sprincie 7)
 
 ### Zaimplementowane i przetestowane
 
@@ -60,16 +60,19 @@ inspiracja projektem Procurement z PwC) — patrz główny [`README.md`](../READ
 | Ground truth RAG | [`src/multiagent_poc/evaluation/rag_eval_set.py`](../src/multiagent_poc/evaluation/rag_eval_set.py) | Oczekiwane źródło/sekcja/słowa kluczowe dla 15 pytań, wyprowadzone ręcznie z treści wszystkich 8 runbooków. |
 | LLM-as-judge | [`src/multiagent_poc/evaluation/judge.py`](../src/multiagent_poc/evaluation/judge.py) | Ocena 1-5 przez `llama3.1:8b` wg rubryki — z jawnie odnotowanym ograniczeniem (ten sam model ocenia własną rodzinę odpowiedzi). |
 | Framework ewaluacyjny (RAG) | [`scripts/evaluate_rag.py`](../scripts/evaluate_rag.py) | Trzy niezależne sygnały (retrieval hit-rate, pokrycie słów kluczowych, LLM-judge) na 15 pytaniach, z pominięciem klasyfikatora (izolacja jakości RAG). Realny wynik: 86% / 38% / 4.67/5 — rozbieżność między sygnałami ujawniła konkretny błąd retrievalu niewidoczny dla samego LLM-judge, patrz decision log. |
+| Drugi agent — drafting agent | [`src/multiagent_poc/agents/drafting_agent.py`](../src/multiagent_poc/agents/drafting_agent.py) | Generuje gotowe dokumenty (zgłoszenia, karty zdarzeń, pisma) dla 7/8 kategorii, reużywając chunków z `subagent.answer()`. Brakujące dane → jawny placeholder `[uzupełnij: ...]`, nie zgadywanie. Kategorie wrażliwe (BHP, HR) mają `requires_human_review=True`. |
+| Węzeł zatwierdzania dokumentu w grafie | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`document_review_node`) | Dla dokumentów wrażliwych — pauzuje graf przez `interrupt()` (payload `kind="document_review"`), wznawia z zatwierdzoną/edytowaną treścią, procedural `answer` przeżywa pauzę obok `draft_text`. |
 
-**Zweryfikowane działanie:** `pytest` (42/42 testy), pełny graf na żywo
-(auto-odpowiedź z Ollama, odrzucenie walidacji, pauza/wznowienie HITL) —
-patrz wpisy "Sprint 3", "Sprint 4" i "Sprint 5" w `decision_log.md`, w tym
-uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live demo
-grafu, realny trace pobrany z powrotem przez Langfuse API (`lf.api.trace.get(...)`)
-potwierdzający poprawne zagnieżdżenie spanów i przechwycone tokeny/latencję,
-oraz kolejka HITL zweryfikowana na żywo w dwóch niezależnych kartach
-przeglądarki (dowód, że kolejka jest faktycznie współdzielona, nie
-przypisana do jednej sesji).
+**Zweryfikowane działanie:** `pytest` (50/50 testów, w tym testy wymagające
+Ollamy), pełny graf na żywo (auto-odpowiedź z Ollama, odrzucenie walidacji,
+pauza/wznowienie HITL) — patrz wpisy "Sprint 3"-"Sprint 7" w `decision_log.md`,
+w tym uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live
+demo grafu, realny trace pobrany z powrotem przez Langfuse API
+(`lf.api.trace.get(...)`) potwierdzający poprawne zagnieżdżenie spanów i
+przechwycone tokeny/latencję, kolejka HITL zweryfikowana na żywo w dwóch
+niezależnych kartach przeglądarki, oraz drafting agent zweryfikowany
+end-to-end (dokument BHP → kolejka `document_review` → zatwierdzenie przez
+operatora → pracownik dostaje odpowiedź i dokument razem).
 
 ## Stack
 
