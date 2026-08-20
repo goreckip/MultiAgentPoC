@@ -38,6 +38,7 @@ def classify_node(state: GraphState) -> dict:
         "confidence": result.decision.raw_classification.confidence,
         "should_escalate": result.decision.should_escalate,
         "used_attachment": result.used_attachment,
+        "attachment_text": result.attachment_text,
     }
 
 
@@ -51,10 +52,11 @@ def route_after_classify(state: GraphState) -> str:
 
 def auto_answer_node(state: GraphState) -> dict:
     intent = Intent(state["intent"])
-    result = agent_answer(state["question"], intent)
+    attachment_text = state.get("attachment_text")
+    result = agent_answer(state["question"], intent, attachment_text=attachment_text)
     update = {"answer": result.text, "sources": result.sources, "draft_pending_review": False}
 
-    draft = draft_document(state["question"], intent, result.chunks)
+    draft = draft_document(state["question"], intent, result.chunks, attachment_text=attachment_text)
     if draft is not None:
         update["draft_doc_type"] = draft.doc_type
         update["draft_text"] = draft.text

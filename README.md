@@ -29,9 +29,11 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
    ([`agents/drafting_agent.py`](src/multiagent_poc/agents/drafting_agent.py), 7/8 kategorii —
    brakujące dane oznacza jawnym placeholderem, nie zgaduje).
 5. **Walidacja danych wejściowych** — dane wrażliwe, format numeru zamówienia,
-   uprawnienia do kategorii pytań, oraz opcjonalny załącznik PDF (np. zamówienie)
-   jako dodatkowy kontekst, gdy klasyfikacja tekstowa ma zbyt niską pewność —
-   zawsze poprzedzony skanem antywirusowym (ClamAV, lokalnie).
+   uprawnienia do kategorii pytań, oraz opcjonalny załącznik PDF (np. zamówienie),
+   zawsze poprzedzony skanem antywirusowym (ClamAV, lokalnie). Treść załącznika
+   służy dwóm celom: przełamuje remis, gdy klasyfikacja ma zbyt niską pewność,
+   **i trafia do obu agentów jako dane sprawy** — dzięki czemu dokument potrafi
+   wypełnić numer zamówienia z załączonego PDF zamiast wstawić placeholder.
 6. **Human-in-the-loop** — pytania eskalowane (niska pewność / kategoria `inne`) **oraz
    dokumenty z kategorii wrażliwych (BHP, HR)** trafiają do **współdzielonej kolejki**
    ([`src/multiagent_poc/hitl/queue.py`](src/multiagent_poc/hitl/queue.py)),

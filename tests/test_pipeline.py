@@ -19,16 +19,22 @@ def _clf(intent: Intent, confidence: float) -> IntentClassification:
     return IntentClassification(intent=intent, confidence=confidence, vote_counts={intent.value: 2})
 
 
-def test_high_confidence_never_touches_attachment(tmp_path):
+def test_high_confidence_does_not_reclassify_but_still_carries_attachment(tmp_path):
+    """`used_attachment` tracks the *reclassification* path specifically. Since
+    req 5.8 the text is parsed and carried forward regardless, so the agents
+    downstream can quote the attached document even when classification never
+    needed it.
+    """
     pdf_path = tmp_path / "order.pdf"
-    pdf_path.write_bytes(_make_minimal_pdf_with_text("cokolwiek"))
+    pdf_path.write_bytes(_make_minimal_pdf_with_text("Zamowienie ZM-2024-00981"))
 
     with patch("multiagent_poc.classification.pipeline.classify", return_value=_clf(Intent.DOSTAWY, 1.0)) as mock_classify:
         result = handle_question("Dostawa nie doszła", attachment_path=pdf_path)
 
-    assert result.used_attachment is False
+    assert result.used_attachment is False  # no second, attachment-assisted classification
     assert result.decision.effective_intent == Intent.DOSTAWY
-    mock_classify.assert_called_once()  # only the text-only pass — attachment never parsed
+    mock_classify.assert_called_once()
+    assert "ZM-2024-00981" in result.attachment_text
 
 
 def test_low_confidence_with_attachment_reclassifies(tmp_path):

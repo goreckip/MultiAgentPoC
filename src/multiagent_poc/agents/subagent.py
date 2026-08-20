@@ -60,7 +60,12 @@ def _retrieve_for_intent(question: str, intent: Intent, client: chromadb.ClientA
 
 
 @observe(name="subagent_answer")
-def answer(question: str, intent: Intent, client: chromadb.ClientAPI | None = None) -> AgentAnswer:
+def answer(
+    question: str,
+    intent: Intent,
+    client: chromadb.ClientAPI | None = None,
+    attachment_text: str | None = None,
+) -> AgentAnswer:
     if intent == Intent.INNE:
         raise ValueError("Intent.INNE has no subagent/runbook — should have been escalated by the gate")
 
@@ -69,9 +74,20 @@ def answer(question: str, intent: Intent, client: chromadb.ClientAPI | None = No
 
     context = "\n\n---\n\n".join(f"[{c.source} | {c.heading_path}]\n{c.text}" for c in chunks)
     system_prompt = f"{ANSWER_SYSTEM_PROMPT}\n\n{AGENT_PROMPT_ADDENDUM[intent]}"
+
+    human_parts = [f"Kontekst proceduralny (runbook):\n{context}"]
+    if attachment_text:
+        # Kept visually separate from the runbook context so the model can tell
+        # procedure (authoritative) from the employee's own document (case data).
+        human_parts.append(
+            "Dokument załączony przez pracownika (dane konkretnej sprawy, nie procedura):\n"
+            f"{attachment_text}"
+        )
+    human_parts.append(f"Pytanie: {question}")
+
     llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
     response = llm.invoke(
-        [("system", system_prompt), ("human", f"Kontekst:\n{context}\n\nPytanie: {question}")],
+        [("system", system_prompt), ("human", "\n\n".join(human_parts))],
         config={"callbacks": [get_callback_handler()]},
     )
 

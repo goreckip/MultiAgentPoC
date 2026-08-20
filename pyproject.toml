@@ -25,3 +25,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `slow` covers the live end-to-end test: two real Ollama calls, ~4-5 min on CPU.
+# Excluded by default so the normal suite stays fast; run it with `pytest -m slow`.
+addopts = "-m 'not slow'"
+markers = ["slow: live end-to-end test requiring a running Ollama (minutes, not seconds)"]

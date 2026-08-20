@@ -22,7 +22,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 2.1 | Próg pewności w konfiguracji | ✅ | 1 | MVP |
 | 2.2 | Logika: powyżej progu → auto-odpowiedź | ✅ (`classification/gate.py`) | 3 | MVP |
 | 2.3 | Logika: poniżej progu → eskalacja (efektywna intencja `inne`) | ✅ | 3 | MVP (dopytanie zamiast eskalacji — nie zrobione, patrz uwaga w `sequence_diagram.md`) |
-| 2.4 | Test na pytaniach dwuznacznych (3, 10, 13 w `test_questions.md`) | 🚧 (zmierzone, ale klasyfikator ich nie rozróżnia dobrze — patrz `decision_log.md`) | 3 | MVP |
+| 2.4 | Test na pytaniach dwuznacznych (3, 10, 13 w `test_questions.md`) | ✅ (`test_ambiguous_questions_never_route_to_an_unacceptable_intent` — własność: wolno eskalować lub wybrać jedną z dopuszczalnych intencji, nie wolno pewnie trafić w obcą) | 3 | MVP |
 | 2.5 | Test na pytaniach spoza katalogu / danych wrażliwych (14-16, 19, 20) | ✅ (5/5 poprawnie eskalowanych, `test_classifier.py`) | 3 | MVP |
 
 ## Warstwa 3 — RAG nad runbookami
@@ -35,7 +35,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 3.4 | Porównanie obu strategii na realnym przykładzie | ✅ (`scripts/compare_chunking.py`, wynik: section wygrywa) | 2 | MVP |
 | 3.5 | Indeksacja w Chroma | ✅ | 2 | MVP |
 | 3.6 | Retrieval (query → top-k chunków) | ✅ | 2 | MVP |
-| 3.7 | Generacja odpowiedzi na bazie kontekstu | 🚧 (kod gotowy w `retrieval.generate_answer`, nie mam jeszcze end-to-end testu z realnym pytaniem użytkownika przez cały pipeline) | 2 | MVP |
+| 3.7 | Generacja odpowiedzi na bazie kontekstu | ✅ (realizowane przez `agents/subagent.py`; martwy `retrieval.generate_answer` usunięty; `tests/test_end_to_end.py` przepuszcza realne pytanie przez cały graf na żywej Ollamie — `pytest -m slow`) | 2 | MVP |
 | 3.8 | Model embeddingowy oddzielony od modelu generacyjnego | ✅ (`nomic-embed-text` vs `llama3.1:8b`) | 2 | — (decyzja dodatkowa) |
 
 ## Warstwa 4 — Subagenci per kategoria + router
@@ -44,7 +44,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 |---|---|---|---|---|
 | 4.1 | Graf LangGraph (routing między węzłami) | ✅ (`graph/pipeline_graph.py`) | 4 | Stretch |
 | 4.2 | Osobny subagent/prompt per kategoria procesu | ✅ (`agents/subagent.py`, retrieval filtrowany do runbooka + prompt per kategoria) | 4 | Stretch |
-| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ (nie osobno testowane w grafie — dziedziczy ograniczenia klasyfikatora ze Sprintu 3) | 4 | Stretch |
+| 4.3 | Routing przy zazębiających się kategoriach (pytania 3, 10, 13) | ⬜ **częściowo pokryte przez 2.4** — routing w grafie jest bezpośrednią funkcją decyzji gate'u, więc własność „nigdy obca intencja" jest już testowana. Niezrealizowana została pierwotna ambicja: **subagent przekazujący pytanie dalej**, gdy sam pokrywa je tylko częściowo (np. lodówka = higiena + awarie) | 4 | Stretch |
 | 4.4 | Drugi agent — drafting agent (dokumenty per kategoria) | ✅ (`agents/drafting_agent.py`, 7/8 kategorii, reużywa chunków z `subagent.answer()`; zweryfikowane na żywo w przeglądarce) | 7 | Stretch (dodane po planie bazowym, 2026-08-20) |
 | 4.5 | Kategorie wrażliwe (BHP, HR) — dokument zawsze przez HITL przed dostarczeniem | ✅ (`hitl/queue.py` — `kind="document_review"`, zweryfikowane na żywo end-to-end) | 7 | Stretch |
 
@@ -59,7 +59,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 5.5 | Załącznik PDF (np. zamówienie) jako dodatkowy kontekst, gdy `confidence < próg` | ✅ (`classification/pipeline.py`, zweryfikowane na żywo — patrz `decision_log.md`) | 4 | Stretch (dodane po planie bazowym, 2026-08-19) |
 | 5.6 | Skan antywirusowy załącznika przed jakimkolwiek parsowaniem/przekazaniem dalej | ✅ (ClamAV lokalnie, blokujące i bezwarunkowe — `validation/attachment_scan.py`) | 4 | Stretch |
 | 5.7 | Parsowanie treści PDF (tekst → embedding, bez OCR obrazów na start) | ✅ (`validation/attachment.py`, pypdf) | 4 | Stretch |
-| 5.8 | Agent "data retrieval" wykorzystujący treść załącznika w odpowiedzi | ⬜ | 5+ | Stretch — followup po 5.5-5.7, osobny agent w warstwie 4 |
+| 5.8 | Treść załącznika wykorzystywana w odpowiedzi i dokumencie (nie tylko do reklasyfikacji) | ✅ (`PipelineResult.attachment_text` → `subagent.answer()` i `draft_document()`; zamiast osobnego agenta — patrz `decision_log.md`, Sprint 10) | 10 | Stretch |
 
 ## Warstwa 6 — Human-in-the-loop
 
@@ -93,7 +93,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 | 9.3 | Dokumentacja architektury | ✅ (ten zestaw dokumentów) | — | MVP |
 | 9.4 | Diagram sekwencji docelowego procesu | ✅ (`sequence_diagram.md`) | — | MVP |
 | 9.5 | Framework ewaluacyjny (trafność retrievalu i odpowiedzi) | ✅ (`scripts/evaluate_rag.py` — retrieval hit-rate 86%, keywords 38%, LLM-judge 4.67/5; rozbieżność metryk uczciwie przeanalizowana w `decision_log.md`) | 6 | Stretch |
-| 9.6 | Case study / materiał na LinkedIn | ⬜ | 6 | Stretch |
+| 9.6 | Case study / materiał na LinkedIn | ✅ (`docs/case_study.md` + wersja HTML z interaktywnym odtworzeniem przebiegu, do wysyłki mailem) | 9 | Stretch |
 | ~~9.7~~ | ~~Porównanie LangChain/LangGraph vs Pydantic AI w README~~ | ❌ odrzucone z planu (2026-08-20) | 5 | Stretch |
 
 ## Infrastruktura / środowisko

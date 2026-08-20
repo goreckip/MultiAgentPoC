@@ -31,6 +31,10 @@ class PipelineResult:
     decision: GateDecision
     used_attachment: bool
     validation_flags: list[str]
+    attachment_text: str | None = None
+    """Extracted PDF text, when an attachment was supplied. Carried forward so the
+    answering and drafting agents can quote real order data from it (req 5.8), not
+    just use it to break a classification tie."""
 
 
 @observe(name="handle_question")
@@ -39,14 +43,28 @@ def handle_question(question: str, attachment_path: Path | None = None) -> Pipel
     if not validation.allowed:
         raise ValidationRejected(validation.reason)
 
+    attachment_text = None
     if attachment_path is not None:
         scan_file(attachment_path)  # raises AttachmentRejected — caller decides how to surface that
+        # Parsed unconditionally once scanned: if the employee bothered to attach a
+        # document, the agents downstream should be able to read it, not only the
+        # classifier-tiebreak path below.
+        attachment_text = parse_pdf_text(attachment_path)
 
     decision = decide(classify(question))
-    if not decision.should_escalate or attachment_path is None:
-        return PipelineResult(decision=decision, used_attachment=False, validation_flags=validation.flags)
+    if not decision.should_escalate or attachment_text is None:
+        return PipelineResult(
+            decision=decision,
+            used_attachment=False,
+            validation_flags=validation.flags,
+            attachment_text=attachment_text,
+        )
 
-    attachment_text = parse_pdf_text(attachment_path)  # already scanned above
     combined_question = f"{question}\n\n{attachment_text}"
     decision = decide(classify(combined_question))
-    return PipelineResult(decision=decision, used_attachment=True, validation_flags=validation.flags)
+    return PipelineResult(
+        decision=decision,
+        used_attachment=True,
+        validation_flags=validation.flags,
+        attachment_text=attachment_text,
+    )

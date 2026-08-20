@@ -47,7 +47,7 @@ patrz główny [`README.md`](../README.md).
 | Eksperyment porównawczy (klasyfikator) | [`scripts/evaluate_classifier.py`](../scripts/evaluate_classifier.py) | Uruchamia klasyfikator + gate na całym zbiorze ewaluacyjnym, raportuje trafność i każdą pomyłkę. |
 | Skan antywirusowy załącznika | [`src/multiagent_poc/validation/attachment_scan.py`](../src/multiagent_poc/validation/attachment_scan.py) | Wywołuje lokalny `clamscan.exe` (ClamAV), blokujące i bezwarunkowe przed jakimkolwiek parsowaniem. |
 | Parser PDF | [`src/multiagent_poc/validation/attachment.py`](../src/multiagent_poc/validation/attachment.py) | Ekstrakcja tekstu (pypdf), tylko warstwa tekstowa, bez OCR. |
-| Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik: reklasyfikacja z treścią PDF tylko gdy pytanie samo w sobie miało zbyt niską pewność. Zastępczo za graf LangGraph do czasu Sprintu 4/2. |
+| Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik. Treść PDF (po skanie AV) jest parsowana zawsze i niesiona w `PipelineResult.attachment_text` do obu agentów; dodatkowo służy do reklasyfikacji, gdy pytanie samo w sobie miało zbyt niską pewność. |
 | Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
 | Walidacja danych wejściowych | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) | PESEL (regex + suma kontrolna), prompt injection, prośby o dane osób trzecich → twardy odrzut; zły format numeru zamówienia → flaga, nie blokada. |
 | Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja ze Sprintu 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
@@ -63,7 +63,8 @@ patrz główny [`README.md`](../README.md).
 | Drugi agent — drafting agent | [`src/multiagent_poc/agents/drafting_agent.py`](../src/multiagent_poc/agents/drafting_agent.py) | Generuje gotowe dokumenty (zgłoszenia, karty zdarzeń, pisma) dla 7/8 kategorii, reużywając chunków z `subagent.answer()`. Brakujące dane → jawny placeholder `[uzupełnij: ...]`, nie zgadywanie. Kategorie wrażliwe (BHP, HR) mają `requires_human_review=True`. |
 | Węzeł zatwierdzania dokumentu w grafie | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`document_review_node`) | Dla dokumentów wrażliwych — pauzuje graf przez `interrupt()` (payload `kind="document_review"`), wznawia z zatwierdzoną/edytowaną treścią, procedural `answer` przeżywa pauzę obok `draft_text`. |
 
-**Zweryfikowane działanie:** `pytest` (50/50 testów, w tym testy wymagające
+**Zweryfikowane działanie:** `pytest` (52 szybkie testy + 4 wolne end-to-end
+uruchamiane przez `pytest -m slow`, w tym testy wymagające
 Ollamy), pełny graf na żywo (auto-odpowiedź z Ollama, odrzucenie walidacji,
 pauza/wznowienie HITL) — patrz wpisy "Sprint 3"-"Sprint 7" w `decision_log.md`,
 w tym uczciwie odnotowane znane ograniczenie klasyfikatora ujawnione w live
@@ -72,7 +73,10 @@ demo grafu, realny trace pobrany z powrotem przez Langfuse API
 przechwycone tokeny/latencję, kolejka HITL zweryfikowana na żywo w dwóch
 niezależnych kartach przeglądarki, oraz drafting agent zweryfikowany
 end-to-end (dokument BHP → kolejka `document_review` → zatwierdzenie przez
-operatora → pracownik dostaje odpowiedź i dokument razem).
+operatora → pracownik dostaje odpowiedź i dokument razem). Od Sprintu 10
+`tests/test_end_to_end.py` przepuszcza realne pytanie przez cały graf na
+żywej Ollamie, z asercjami na ugruntowanie odpowiedzi w runbooku i brak
+zmyślonych rozwinięć skrótów.
 
 ## Stack
 

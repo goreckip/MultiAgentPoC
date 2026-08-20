@@ -27,9 +27,19 @@ pracowników sieci sklepów convenience, na podstawie procedur wewnętrznych i p
 Przygotuj treść dokumentu typu "{doc_type}", zawierającego pola: {fields}.
 
 Zasady:
-- Jeśli którejś informacji potrzebnej do pola brakuje w pytaniu pracownika, NIE zgaduj —
-  wstaw w tym miejscu placeholder w formacie [uzupełnij: nazwa_pola].
-- Opieraj się wyłącznie na dostarczonym kontekście proceduralnym i treści pytania.
+- Najpierw poszukaj wartości każdego pola w treści pytania ORAZ w załączonym dokumencie
+  (jeśli został dołączony). Numery zamówień, nazwy dostawców i daty często występują
+  wyłącznie w załączniku — przepisz je stamtąd dosłownie.
+- Placeholder [uzupełnij: nazwa_pola] wstawiaj TYLKO wtedy, gdy danej informacji nie ma
+  ani w pytaniu, ani w załączniku. Nigdy nie zgaduj wartości.
+- Nie wstawiaj placeholdera obok pola, które już wypełniłeś — każde pole ma mieć albo
+  wartość, albo placeholder, nigdy jedno i drugie.
+- SKRÓTY — reguła bezwzględna: skrótu (WZ, HACCP, e-ZLA, FIFO) NIGDY nie rozwijaj.
+  Pisz sam skrót, bez nawiasu z wyjaśnieniem, chyba że rozwinięcie dosłownie występuje
+  w dostarczonym tekście.
+  DOBRZE: "Brakuje dwóch palet względem WZ."
+  ŹLE:    "Brakuje dwóch palet względem Wydania Zewnętrznego (WZ)."
+  ŹLE:    "Brakuje dwóch palet względem Widza Zlecenia (WZ)."
 - Odpowiedz WYŁĄCZNIE treścią dokumentu, gotową do wklejenia do systemu wewnętrznego —
   bez dodatkowego komentarza, bez "Oto dokument:" na początku."""
 
@@ -89,9 +99,18 @@ class DraftedDocument:
 
 
 @observe(name="draft_document")
-def draft_document(question: str, intent: Intent, chunks: list[RetrievedChunk]) -> DraftedDocument | None:
+def draft_document(
+    question: str,
+    intent: Intent,
+    chunks: list[RetrievedChunk],
+    attachment_text: str | None = None,
+) -> DraftedDocument | None:
     """Returns None when the intent has no document template — callers should
     treat that as "no draft available for this category", not an error.
+
+    `attachment_text` (req 5.8) lets the agent fill fields from a document the
+    employee attached — an order PDF carrying the order number the question
+    itself never mentioned — instead of emitting a placeholder for it.
     """
     spec = DOCUMENT_TEMPLATES.get(intent)
     if spec is None:
@@ -99,9 +118,18 @@ def draft_document(question: str, intent: Intent, chunks: list[RetrievedChunk]) 
 
     context = "\n\n---\n\n".join(f"[{c.source} | {c.heading_path}]\n{c.text}" for c in chunks)
     system_prompt = DRAFT_SYSTEM_PROMPT.format(doc_type=spec.doc_type, fields=", ".join(spec.required_fields))
+
+    human_parts = [f"Kontekst proceduralny:\n{context}"]
+    if attachment_text:
+        human_parts.append(
+            "Dokument załączony przez pracownika — użyj go jako źródła danych do pól "
+            f"(np. numeru zamówienia, dostawcy, dat):\n{attachment_text}"
+        )
+    human_parts.append(f"Pytanie pracownika: {question}")
+
     llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
     response = llm.invoke(
-        [("system", system_prompt), ("human", f"Kontekst proceduralny:\n{context}\n\nPytanie pracownika: {question}")],
+        [("system", system_prompt), ("human", "\n\n".join(human_parts))],
         config={"callbacks": [get_callback_handler()]},
     )
 

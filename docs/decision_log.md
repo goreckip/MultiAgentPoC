@@ -650,6 +650,98 @@ etapie, surowy materiał pod przyszłe STAR.
   **Dlaczego:** materiał ma bronić się sam, bez kontekstu poprzednich
   projektów zawodowych.
 
+## Sprint 10 — domknięcie zaległych wymagań (2.4, 3.7, 5.8) + skróty — 2026-08-20
+
+- **Decyzja:** twarda wytyczna w promptach: **nie rozwijaj skrótów, których
+  kontekst sam nie rozwija** — dodana do `ANSWER_SYSTEM_PROMPT`
+  (`rag/retrieval.py`) i `DRAFT_SYSTEM_PROMPT` (`agents/drafting_agent.py`).
+  **Dlaczego:** w Sprincie 9 model dwukrotnie zmyślił rozwinięcie „WZ"
+  („Wywiad Zamówienia", „Widok Zamówienia"). Runbooki używają skrótów (WZ,
+  HACCP, e-ZLA) bez definicji, więc model wypełniał lukę zgadywaniem. To ta
+  sama klasa błędu co halucynacja daty — i to samo lekarstwo: jawnie zabronić
+  wypełniania luk, zamiast liczyć na to, że model sam się powstrzyma.
+  **Efekt — i dwie lekcje z drogi do niego:**
+
+  1. **Pierwsza wersja testu regresyjnego była bezużyteczna.** Sprawdzała
+     obecność trzech konkretnych fraz, które model wyprodukował wcześniej
+     („Wywiad Zamówienia", „Widok Zamówienia", „Wydanie Zewnętrzne").
+     Przy kolejnym przebiegu model wymyślił **dwie zupełnie nowe** —
+     „Zamówienia Zamkowego" i „Widza Zlecenia" — i test przeszedł na zielono,
+     mimo że błąd wystąpił. Blocklist znanych złych ciągów nie działa na
+     halucynacje, bo halucynacja to z definicji coś, czego jeszcze nie
+     widziałeś. Test przepisany na **wzorzec kształtu** („Jakieś Słowa (WZ)"
+     albo „WZ (jakieś słowa)"), zweryfikowany na 5 zaobserwowanych
+     przypadkach błędnych i 4 poprawnych.
+  2. **Runbook sam definiuje WZ** — `01_dostawy.md` pisze „listu przewozowego
+     (WZ)". Więc rozwinięcie „list przewozowy" jest **legalne**, a błędem są
+     tylko wymyślone alternatywy. Gdybym tego nie sprawdził, test zgłaszałby
+     fałszywe alarmy na poprawnym cytacie z procedury. Reguła w prompcie i
+     asercja w teście dopuszczają rozwinięcie występujące dosłownie w
+     kontekście.
+
+  Sam prompt też wymagał wzmocnienia: zwykłe „nie rozwijaj skrótów" model
+  ignorował: dopiero wersja z jawnymi przykładami DOBRZE/ŹLE zaczęła działać.
+  Uczciwe zastrzeżenie: model jest stochastyczny, jeden zielony przebieg nie
+  jest dowodem — ale test zostaje w zestawie jako siatka bezpieczeństwa.
+
+- **Wymaganie 2.4 (pytania dwuznaczne) — zamknięte przez zmianę definicji
+  „sukcesu".** Wcześniej wisiało jako 🚧, bo klasyfikator „nie rozróżnia ich
+  dobrze". Problem: dla pytań z dwiema dopuszczalnymi intencjami (terminal =
+  płatności/awarie, lodówka = higiena/awarie) **nie istnieje jedna poprawna
+  odpowiedź**, więc mierzenie top-1 accuracy było mierzeniem złej rzeczy.
+  **Nowa, testowalna własność:** wolno eskalować, wolno wybrać dowolną z
+  dopuszczalnych intencji, **nie wolno pewnie trafić w intencję obcą** —
+  bo to jedyny wariant, w którym pracownik dostaje odpowiedź z niewłaściwego
+  runbooka. Test: `test_ambiguous_questions_never_route_to_an_unacceptable_intent`.
+  **Efekt:** przechodzi na żywym klasyfikatorze.
+
+- **Wymaganie 3.7 (generacja na bazie kontekstu) — zamknięte, przy okazji
+  usunięty martwy kod.** Wymaganie wskazywało na `retrieval.generate_answer()`,
+  ale ta funkcja **nie miała już żadnego wywołania** — realną ścieżką jest
+  `agents/subagent.py` (retrieval filtrowany do runbooka intencji + dopisek
+  do promptu per kategoria). Zamiast utrzymywać dwie rozjeżdżające się drogi
+  generacji, martwa funkcja została usunięta, a w jej miejscu został komentarz
+  wyjaśniający gdzie jest prawdziwa implementacja.
+  **Brakujący dowód dostarczony:** `tests/test_end_to_end.py` — realne pytanie
+  przez **cały graf** na żywej Ollamie, bez mocków, z asercjami na
+  ugruntowanie w runbooku (`sources == ['01_dostawy.md']`), brak eskalacji i
+  powstanie dokumentu. Oznaczony markerem `slow` i wyłączony z domyślnego
+  uruchomienia (`addopts = "-m 'not slow'"`), bo to ~4 minuty na CPU —
+  uruchamiany świadomie przez `pytest -m slow`.
+
+- **Wymaganie 5.8 (treść załącznika w odpowiedzi) — zrealizowane, ale
+  **bez osobnego agenta**, wbrew pierwotnemu zapisowi w planie.
+  **Dlaczego:** pierwotnie zakładałem „agenta data retrieval". Przy
+  implementacji okazało się, że osobny agent byłby pustym opakowaniem —
+  treść załącznika to po prostu **dodatkowy kontekst**, który mają widzieć
+  agenci już istniejący, a nie zadanie wymagające własnego rozumowania i
+  własnego wywołania LLM. Trzeci agent oznaczałby trzecie wywołanie modelu
+  (+2 min na CPU) bez zysku jakościowego.
+  **Zmiana zachowania:** wcześniej PDF był parsowany **tylko** gdy
+  klasyfikacja miała niską pewność (do przełamania remisu). Teraz jest
+  parsowany zawsze po skanie AV i niesiony dalej w `PipelineResult.attachment_text`
+  → `subagent.answer()` i `draft_document()`. Uzasadnienie produktowe: jeśli
+  pracownik zadał sobie trud załączenia dokumentu, agenci powinni umieć go
+  przeczytać, a nie tylko użyć do rozstrzygnięcia kategorii.
+  **Szczegół projektowy:** treść załącznika trafia do promptu **wyraźnie
+  oddzielona** od kontekstu proceduralnego i opisana jako „dane konkretnej
+  sprawy, nie procedura" — żeby model nie potraktował dokumentu pracownika
+  jak źródła procedur.
+  **Efekt — po naprawieniu błędu, który sam wprowadziłem:** pierwszy przebieg
+  weryfikacyjny pokazał, że załącznik **częściowo** działa — dostawca i data
+  zostały wypełnione z PDF (bez załącznika były placeholderami), ale numer
+  zamówienia nadal wychodził jako `[uzupełnij: ...]`, mimo że jest w
+  dokumencie. Sprawdzenie ekstrakcji PDF wykluczyło parser (numer był w
+  tekście podanym modelowi). Przyczyną okazała się **moja własna reguła w
+  prompcie**: „jeśli informacji brakuje **w pytaniu pracownika**, wstaw
+  placeholder" — model czytał ją dosłownie i placeholderował wszystko, czego
+  nie było w samym pytaniu, ignorując załącznik. Po przeformułowaniu
+  („szukaj najpierw w pytaniu ORAZ w załączniku; placeholder tylko gdy nie ma
+  w żadnym z nich") weryfikacja przeszła: z załącznikiem wszystkie cztery pola
+  wypełnione włącznie z `ZM-2024-00981`, bez załącznika — placeholdery.
+  **Lekcja:** kiedy model „ignoruje" instrukcję, najpierw sprawdź, czy
+  instrukcja mówi to, co ci się wydaje.
+
 ## Szablon na kolejne sprinty
 
 ```

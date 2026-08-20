@@ -23,14 +23,18 @@ def _config():
     return {"configurable": {"thread_id": str(uuid.uuid4())}}
 
 
-def _pipeline_result(intent: Intent, confidence: float, escalate: bool) -> PipelineResult:
+def _pipeline_result(
+    intent: Intent, confidence: float, escalate: bool, attachment_text: str | None = None
+) -> PipelineResult:
     clf = IntentClassification(intent=intent, confidence=confidence, vote_counts={})
     decision = GateDecision(
         effective_intent=Intent.INNE if escalate else intent,
         should_escalate=escalate,
         raw_classification=clf,
     )
-    return PipelineResult(decision=decision, used_attachment=False, validation_flags=[])
+    return PipelineResult(
+        decision=decision, used_attachment=False, validation_flags=[], attachment_text=attachment_text
+    )
 
 
 def test_auto_answer_route():
@@ -106,6 +110,30 @@ def test_draft_requiring_review_pauses_then_resumes_with_approved_text():
     assert second["answer"] == "pierwsza pomoc"  # procedural answer survives the pause
     assert second["draft_text"] == "SZKIC zatwierdzony przez operatora"
     assert second["draft_pending_review"] is False
+
+
+def test_attachment_text_reaches_both_agents():
+    """Req 5.8 — an attached document must be readable by the answering agent
+    *and* the drafting agent, so a document can be filled from real order data
+    rather than emitting a placeholder for it.
+    """
+    graph = build_graph()
+    attachment = "Zamowienie ZM-2024-00981, dostawca Centralny, data 2026-08-20"
+
+    with patch(
+        "multiagent_poc.graph.pipeline_graph.handle_question",
+        return_value=_pipeline_result(Intent.DOSTAWY, 1.0, escalate=False, attachment_text=attachment),
+    ), patch(
+        "multiagent_poc.graph.pipeline_graph.agent_answer",
+        return_value=AgentAnswer(text="odpowiedź", sources=["01_dostawy.md"], chunks=[]),
+    ) as mock_answer, patch(
+        "multiagent_poc.graph.pipeline_graph.draft_document",
+        return_value=DraftedDocument(doc_type="Zgłoszenie", text="SZKIC", requires_review=False),
+    ) as mock_draft:
+        graph.invoke({"question": "brakuje palet"}, config=_config())
+
+    assert mock_answer.call_args.kwargs["attachment_text"] == attachment
+    assert mock_draft.call_args.kwargs["attachment_text"] == attachment
 
 
 def test_escalate_pauses_then_resumes_with_human_answer():

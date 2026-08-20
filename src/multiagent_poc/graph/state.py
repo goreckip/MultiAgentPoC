@@ -14,6 +14,7 @@ class GraphState(TypedDict, total=False):
     confidence: float | None
     should_escalate: bool
     used_attachment: bool
+    attachment_text: str | None
     answer: str | None
     sources: list[str]
     answer_chunks: list[RetrievedChunk]

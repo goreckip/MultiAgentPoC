@@ -1,16 +1,26 @@
-"""Retrieval + naive generation over an indexed Chroma collection."""
+"""Retrieval over an indexed Chroma collection, plus the shared answer prompt.
+
+Generation itself lives in agents/subagent.py — see the note at the bottom.
+"""
 
 from dataclasses import dataclass
 
 import chromadb
-from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
 from multiagent_poc.config import settings
 
 ANSWER_SYSTEM_PROMPT = """Jesteś asystentem operacyjnym sieci sklepów convenience.
 Odpowiadaj WYŁĄCZNIE na podstawie dostarczonego kontekstu z runbooków.
 Jeśli kontekst nie zawiera odpowiedzi, powiedz to wprost i zasugeruj eskalację
-do człowieka — nie zgaduj i nie korzystaj z wiedzy spoza kontekstu."""
+do człowieka — nie zgaduj i nie korzystaj z wiedzy spoza kontekstu.
+
+SKRÓTY — reguła bezwzględna: skrótu (WZ, HACCP, e-ZLA, FIFO) NIGDY nie
+rozwijaj. Pisz sam skrót, bez nawiasu z wyjaśnieniem, chyba że rozwinięcie
+dosłownie występuje w dostarczonym kontekście.
+DOBRZE: "Odnotuj brak na WZ z podpisem kierowcy."
+ŹLE:    "Odnotuj brak na WZ (Wydanie Zewnętrzne) z podpisem kierowcy."
+ŹLE:    "Odnotuj brak na Widoku Zamówienia (WZ) z podpisem kierowcy." """
 
 
 @dataclass
@@ -41,12 +51,7 @@ def retrieve(
     return chunks
 
 
-def generate_answer(query: str, chunks: list[RetrievedChunk]) -> str:
-    context = "\n\n---\n\n".join(f"[{c.source} | {c.heading_path}]\n{c.text}" for c in chunks)
-    llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
-    messages = [
-        ("system", ANSWER_SYSTEM_PROMPT),
-        ("human", f"Kontekst:\n{context}\n\nPytanie: {query}"),
-    ]
-    response = llm.invoke(messages)
-    return response.content
+# Answer generation lives in agents/subagent.py, not here: it needs the
+# per-intent runbook filter and prompt addendum, so a generic generate_answer()
+# over unfiltered chunks had no remaining callers and was removed rather than
+# left as a second, divergent path (req 3.7 — see decision_log.md, Sprint 10).
