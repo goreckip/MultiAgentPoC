@@ -67,16 +67,21 @@ korespondencji) ma **dwóch** agentów o różnych rolach:
    placeholder `[uzupełnij: ...]`, nigdy zgadywanie. Kategorie wrażliwe (BHP,
    HR) — dokument zawsze przechodzi przez kolejkę HITL, zanim trafi do pracownika.
 
+Obaj agenci widzą też **treść załącznika**, jeśli pracownik go dołączył — dzięki
+czemu dokument potrafi wypełnić numer zamówienia z PDF-a zamiast wstawić
+placeholder (scenariusz C niżej).
+
 ## 3. Walkthrough na żywo — obsługa braku w dostawie
 
-Poniżej dwa **rzeczywiste** przebiegi z jednego uruchomienia, oba z domeny
-zamówień/dostaw. Wszystkie cytowane treści, czasy i liczby tokenów pochodzą z
-faktycznego wykonania i z trace'ów pobranych z Langfuse API — nic nie jest
-ilustracyjne.
+Poniżej trzy **rzeczywiste** przebiegi, wszystkie z domeny zamówień/dostaw.
+Wszystkie cytowane treści, czasy i liczby tokenów pochodzą z faktycznego
+wykonania i z trace'ów pobranych z Langfuse API — nic nie jest ilustracyjne.
 
-Scenariusze dobrane celowo: **pytania są niemal identyczne merytorycznie**
-(brakuje palet, kierowca odjechał), ale system potraktował je zupełnie inaczej —
-co pokazuje, jak działa confidence gate i gdzie leży realna słabość klasyfikatora.
+Scenariusze dobrane celowo — **A i B są niemal identyczne merytorycznie**
+(brakuje palet, kierowca odjechał), a mimo to system potraktował je zupełnie
+inaczej, co pokazuje działanie confidence gate'u i realną słabość
+klasyfikatora. **C** to znów to samo pytanie, tym razem z załączonym PDF —
+pokazuje, jak dane z dokumentu trafiają do generowanego zgłoszenia.
 
 ---
 
@@ -99,48 +104,45 @@ Wynik: **`dostawy`, confidence 0.67** (głosy: `dostawy` 2, `bhp` 1).
 **Krok 3 — confidence gate** (`confidence_gate`, **0.000s**)
 0.67 ≥ próg 0.6 → **auto-obsługa**, routing do subagenta `dostawy`. Bez eskalacji.
 
-**Krok 4 — subagent odpowiada** (`subagent_answer`, **154.3s**; LLM: 150.2s, 713 in / 168 out tokenów)
+**Krok 4 — subagent odpowiada** (`subagent_answer`, ~150s na CPU)
 RAG przefiltrowany wyłącznie do `01_dostawy.md` (`sources=['01_dostawy.md']` —
 nigdy inny runbook, dzięki filtrowi metadanych w Chroma):
 
-> Zgodnie z procedurą opisaną w rozdziale 4.1 Brak towaru (niedostarczona
-> pozycja), musisz:
-> 1. Odnotować brak towaru na WZ (…) z podpisem kierowcy.
-> 2. Zgłosić brak towaru przez system w ciągu 24 godzin.
-> 3. Nie koryguje się stanów magazynowych ręcznie, ponieważ system generuje
->    korektę automatycznie po zatwierdzeniu zgłoszenia przez dział zaopatrzenia.
+> Zgodnie z opisem procedury w sekcji 4.3 Pomyłka dostawcy
+> `[01_dostawy.md | 4. Rozbieżności ilościowe i jakościowe > 4.3]`:
+> * Towar odesłać z tym samym kierowcą, jeśli to możliwe.
+> * Jeśli kierowca już odjechał, produkt magazynować oddzielnie do czasu
+>   instrukcji z regionu — maksymalnie 5 dni roboczych.
+>
+> Krok 2: (…) zrób notatkę na WZ z podpisem kierowcy potwierdzającą
+> niepełność dostawy.
+> Krok 3: W ciągu 24 godzin zgłoś problem przez system wewnętrzny,
+> kategoria „Dostawy".
 
-Model trafnie wybrał **sekcję 4.1** (brak towaru), a nie 4.3 (pomyłka
-dostawcy) — istotne rozróżnienie, bo obie sekcje dotyczą rozbieżności przy
-odbiorze, ale mają inne procedury.
+Odpowiedź jest ugruntowana we właściwym runbooku i cytuje konkretną sekcję ze
+ścieżką nagłówków. Skrót **WZ zostaje skrótem** — pilnuje tego reguła w system
+prompcie, a ostatecznie gwarantuje **deterministyczny strażnik w kodzie**
+(patrz „Znane ograniczenia" — to najciekawsza porażka w tym projekcie).
 
-**Krok 5 — drafting agent tworzy dokument** (`draft_document`, **116.6s**; LLM: 115.8s, 834 in / 94 out tokenów)
+**Krok 5 — drafting agent tworzy dokument** (`draft_document`, ~116s na CPU)
 `dostawy` ma `requires_human_review=False`, więc dokument trafia do pracownika
 od razu, bez kolejki:
 
 ```
 Numer zamówienia lub dostawy: [uzupełnij: numer_zamowienia_lub_dostawy]
 Dostawca: Centralny Dostawca
-Opis rozbieżności: Brakuje dwóch palet w porównaniu do (…) WZ (…)
+Opis rozbieżności: Brakuje dwóch palet względem WZ
 Data dostawy: dzisiaj rano
 ```
 
-Agent poprawnie wyciągnął z pytania **dostawcę** i **datę**, a brakujący numer
-zamówienia **jawnie oznaczył placeholderem zamiast go wymyślić** — to
-zaprojektowane zachowanie: dokument z halucynowanym numerem jest gorszy niż
-dokument z widocznym brakiem.
+Agent wyciągnął z pytania **dostawcę** i **datę**, a numeru zamówienia — którego
+w pytaniu nie było — **nie wymyślił, tylko jawnie oznaczył placeholderem**.
+To zaprojektowane zachowanie: dokument z halucynowanym numerem jest gorszy niż
+dokument z widocznym brakiem. Jak ten sam dokument wygląda, gdy numer *jest*
+dostępny w załączniku — patrz scenariusz C.
 
-**Łącznie: 273.9s** (z czego 266s to dwa wywołania LLM na CPU — patrz uwaga o
+**Łącznie ~274s** (z czego ~266s to dwa wywołania LLM na CPU — patrz uwaga o
 wydajności wyżej; reszta pipeline'u to 3 sekundy).
-
-#### Uczciwie: co model zrobił źle w tym przebiegu
-
-Dwukrotnie **rozwinął skrót „WZ" — i za każdym razem błędnie** („Wywiad
-Zamówienia" w odpowiedzi, „Widok Zamówienia" w dokumencie). Runbook używa
-skrótu WZ bez rozwinięcia, więc model go zmyślił zamiast zostawić w oryginale.
-Merytorycznie procedura jest poprawna, ale w piśmie idącym do dostawcy taki
-błąd rzuca się w oczy. To dokładnie rodzaj usterki, który wyłapuje dopiero
-przegląd na żywo — nie testy jednostkowe i nie LLM-as-judge.
 
 ---
 
@@ -175,6 +177,56 @@ dostarcza ją pracownikowi jako finalną odpowiedź.
 
 ---
 
+### Scenariusz C — to samo pytanie, ale z załączonym PDF zamówienia
+
+Dokładnie ta sama treść pytania co w scenariuszu A, tym razem z załączonym
+plikiem PDF (mockowy wydruk zamówienia):
+
+```
+Zamowienie nr ZM-2024-00981 / Dostawca: Centralny Dostawca Sp. z o.o. /
+Data dostawy: 2026-08-20 / Pozycje: 12 palet
+```
+
+**Krok 1 — skan antywirusowy** (blokujący, bezwarunkowy)
+Zanim cokolwiek przeczyta zawartość pliku, załącznik przechodzi przez lokalny
+**ClamAV**. Plik nie opuszcza maszyny. Odrzucenie na tym etapie przerywa całe
+zapytanie — parser PDF, klasyfikator ani LLM nigdy go nie zobaczą.
+
+**Krok 2 — ekstrakcja treści** (pypdf, tylko warstwa tekstowa, bez OCR)
+Wyciągnięty tekst jest niesiony dalej w `PipelineResult.attachment_text` i
+trafia do **obu agentów** jako osobno oznaczony blok — opisany w prompcie jako
+„dane konkretnej sprawy, nie procedura", żeby model nie pomylił dokumentu
+pracownika ze źródłem procedur.
+
+**Krok 3 — dokument wypełniony danymi z załącznika**
+
+```
+Numer zamówienia lub dostawy: ZM-2024-00981
+Dostawca: Centralny Dostawca Sp. z o.o.
+Opis rozbieżności: brakuje dwóch palet względem WZ
+Data dostawy: 2026-08-20
+```
+
+**Kontrast z tym samym pytaniem bez załącznika (scenariusz A):**
+
+| Pole | Bez załącznika | Z załącznikiem PDF |
+|---|---|---|
+| Numer zamówienia | `[uzupełnij: …]` | **ZM-2024-00981** |
+| Dostawca | Centralny Dostawca | Centralny Dostawca **Sp. z o.o.** |
+| Data dostawy | „dzisiaj rano" | **2026-08-20** |
+
+Załącznik pełni więc **dwie różne role**: przełamuje remis, gdy klasyfikacja ma
+zbyt niską pewność, **oraz** dostarcza dane do dokumentu. Wcześniej PDF był
+parsowany wyłącznie w pierwszym przypadku — teraz, jeśli pracownik zadał sobie
+trud dołączenia dokumentu, obaj agenci potrafią go przeczytać.
+
+> **Uwaga na mylącą flagę:** w tym przebiegu `used_attachment=False`, mimo że
+> dokument ewidentnie korzysta z załącznika. Ta flaga śledzi wyłącznie
+> **reklasyfikację** — a tu klasyfikacja od razu była pewna (0.67), więc drugie
+> przejście nie było potrzebne. Nazwa jest myląca i to znany dług.
+
+---
+
 ### Czego uczy zestawienie A i B
 
 Dwa pytania o to samo zdarzenie biznesowe, dwie różne ścieżki. To **nie jest
@@ -190,22 +242,42 @@ wygeneruje pewnie brzmiący, ale potencjalnie błędny dokument.
 
 ### Realny trace z Langfuse — scenariusz A
 
+**Scenariusz A — bez załącznika:**
 ```
-handle_user_turn                    273.910s
-├─ handle_question                    3.073s
-│   ├─ validate_input                 0.000s
-│   ├─ classify_intent                3.070s
+handle_user_turn                    329.400s
+├─ handle_question                    3.116s
+│   ├─ validate_input                 0.001s
+│   ├─ classify_intent                3.113s
 │   └─ confidence_gate                0.000s
-├─ subagent_answer                  154.250s
-│   └─ GENERATION ChatOllama         150.229s   713 in / 168 out tok
-└─ draft_document                   116.559s
-    └─ GENERATION ChatOllama         115.825s   834 in / 94 out tok
+├─ subagent_answer                  217.585s
+│   └─ GENERATION ChatOllama         213.680s    965 in / 286 out tok
+└─ draft_document                   108.684s
+    └─ GENERATION ChatOllama         107.852s   1136 in / 88 out tok
+```
+
+**Scenariusz C — z załącznikiem PDF** (widoczny krok skanu antywirusowego):
+```
+handle_user_turn                    136.013s
+├─ handle_question                   20.200s
+│   ├─ validate_input                 0.002s
+│   ├─ attachment_malware_scan       16.481s   ← ClamAV, blokujący
+│   ├─ classify_intent                3.705s
+│   └─ confidence_gate                0.000s
+├─ subagent_answer                   64.449s
+│   └─ GENERATION ChatOllama          60.752s   1040 in / 109 out tok
+└─ draft_document                    51.355s
+    └─ GENERATION ChatOllama          50.635s   1226 in / 79 out tok
 ```
 
 Każde pytanie generuje taki zagnieżdżony trace — z modelem, liczbą tokenów i
 latencją **każdego kroku z osobna**, nie tylko całości. `total_cost` wychodzi
 `None`, bo model lokalny przez Ollamę nie ma wpisu w cenniku Langfuse; tokeny
 i latencja i tak dają pełną obserwowalność.
+
+Dwie rzeczy dobrze widać w tym zestawieniu: **skan antywirusowy jest realnym,
+mierzalnym krokiem** (16.5s — `clamscan` przeładowuje ~113 MB sygnatur przy
+każdym wywołaniu), a **rozrzut czasów LLM jest ogromny** (213s vs 61s za tę
+samą pracę) — typowe dla inferencji CPU-only, zależne od stanu cache modelu.
 
 ## 4. Ewaluacja — nie tylko „działa", ale „jak dobrze"
 
@@ -233,6 +305,21 @@ nie zauważając błędu. Tylko sygnał keyword-matching to wyłapał (0%). Żad
 pojedynczy sygnał osobno by tego nie ujawnił — dopiero zestawienie ich
 obnażyło lukę. Pełny opis: [`docs/decision_log.md`, Sprint 6](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/decision_log.md).
 
+### Testy automatyczne
+
+**62 szybkie testy** (mockowany LLM, ~2,5 min) + **4 wolne end-to-end**
+(`pytest -m slow`, realna Ollama, ~4 min), w tym:
+
+- **własność dla pytań dwuznacznych** — dla pytań z dwiema dopuszczalnymi
+  intencjami nie ma jednej poprawnej odpowiedzi, więc mierzenie top-1 accuracy
+  mierzyłoby złą rzecz. Testowana jest zamiast tego własność bezpieczeństwa:
+  wolno eskalować, wolno wybrać dowolną z dopuszczalnych intencji, **nie wolno
+  pewnie trafić w obcy runbook**;
+- **realne pytanie przez cały graf** — bez mocków, z asercjami na ugruntowanie
+  odpowiedzi we właściwym runbooku i na brak zmyślonych rozwinięć skrótów;
+- **treść załącznika dociera do obu agentów** — asercja, że tekst z PDF trafia
+  i do subagenta odpowiedzi, i do drafting agenta.
+
 ## 5. Wybrane decyzje projektowe (materiał STAR)
 
 - **Section-based chunking zamiast fixed-size** — realny eksperyment na
@@ -251,14 +338,55 @@ obnażyło lukę. Pełny opis: [`docs/decision_log.md`, Sprint 6](https://github
   maszyny, zgodnie z założeniem lokalności.
 - **Brakujące pole → placeholder, nie zgadywanie** — dokument z halucynowaną
   datą czy numerem jest gorszy niż dokument z widocznym brakiem.
+- **Zaciąganie danych z załącznika bez trzeciego agenta** — pierwotny plan
+  zakładał osobnego „agenta data retrieval". Przy implementacji okazało się, że
+  byłby pustym opakowaniem: treść załącznika to **dodatkowy kontekst** dla
+  agentów, którzy już istnieją, a nie zadanie wymagające własnego rozumowania.
+  Trzeci agent oznaczałby trzecie wywołanie modelu (+2 min na CPU) bez zysku
+  jakościowego. Odrzucenie własnego wcześniejszego pomysłu okazało się tańsze
+  niż jego dowiezienie.
+- **Deterministyczny strażnik zamiast kolejnej iteracji promptu** — po trzech
+  nieudanych rundach pracy nad promptem (model za każdym razem wracał z nowym
+  zmyślonym rozwinięciem skrótu) uznałem, że to nie jest problem promptowy.
+  Rozwiązaniem jest kod, który sprawdza wynik, a nie kolejne zaklinanie modelu.
+  Szczegóły — patrz „Znane ograniczenia".
 
 ## 6. Znane ograniczenia (uczciwie, nie ukryte)
 
 - Klasyfikator ma 65% top-1 accuracy — widać to wprost w scenariuszu B wyżej,
   a także w złapanym na żywo przypadku pytania o sanepid błędnie
   sklasyfikowanego jako `hr`.
-- Model potrafi zmyślić rozwinięcie skrótu (WZ → „Wywiad Zamówienia") albo rok
-  w dacie — złapane na żywo w tym i poprzednim przebiegu, opisane, nie ukryte.
+- **Wyniki są niedeterministyczne i to jest ryzyko produktowe, nie usterka do
+  wyprompotowania.** Ten sam prompt i to samo pytanie w dwóch kolejnych
+  przebiegach dały: raz cytowanie sekcji **4.1** (brak towaru — poprawnie), raz
+  **4.3** (pomyłka dostawcy — merytorycznie obok). W jednym przebiegu dokument
+  bez załącznika zamiast czystego placeholdera zawierał **zmyślony link
+  markdown** z nieistniejącym adresem. Właśnie dlatego warstwy HITL i walidacji
+  nie są ozdobnikiem: przy modelu tej klasy trzeba **projektować pod założenie,
+  że model czasem zawiedzie**, zamiast liczyć na to, że przestanie.
+- **Zmyślanie rozwinięć skrótów — najciekawsza porażka i to, czego nauczyła.**
+  Runbooki piszą skróty bez rozwinięć (WZ, HACCP, e-ZLA), a model uporczywie
+  wypełniał tę lukę zgadywaniem. **Trzy rundy pracy nad promptem** —
+  zwykła reguła, potem przykłady DOBRZE/ŹLE, potem przykłady jako urwane
+  fragmenty z innego runbooka — i za każdym razem model wracał z **nowym**
+  wymysłem: „Wywiad Zamówienia", „Widok Zamówienia", „Zamówienia Zamkowego",
+  „Widza Zlecenia", wreszcie „Wariant Zgodności". Po drodze dwie lekcje:
+  - **Pierwszy test regresyjny był bezużyteczny** — listował konkretne znane
+    frazy, więc przechodził na zielono, gdy model wymyślił kolejną. Przepisany
+    na wzorzec *kształtu* rozwinięcia.
+  - **Przykład w prompcie stał się szablonem** — po dodaniu „DOBRZE: Odnotuj
+    brak na WZ z podpisem kierowcy." model zaczął zwracać dokładnie to jedno
+    zdanie jako całą odpowiedź, gubiąc kroki procedury.
+
+  **Wniosek, który uważam za najważniejszy w całym projekcie:** przy modelu tej
+  klasy zgodność z instrukcją nie jest problemem promptowym, tylko
+  inżynierskim. Ostatecznie zadziałał **deterministyczny strażnik w kodzie**
+  ([`agents/abbreviations.py`](https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/agents/abbreviations.py)):
+  rozwinięcie skrótu przechodzi tylko wtedy, gdy **dosłownie występuje w
+  kontekście** podanym modelowi; wszystko inne jest sprowadzane do samego
+  skrótu. Reguła w prompcie została jako pierwsza linia obrony, ale to kod
+  daje gwarancję. Pokryte 10 testami jednostkowymi — po jednym na każdy
+  wymysł, który model faktycznie wyprodukował.
 - LLM-as-judge to ten sam model co generuje odpowiedzi — słaby, czasem
   niespójny sędzia (złapany przypadek: ocena 1/5 dla odpowiedzi, która
   faktycznie była zgodna z procedurą).

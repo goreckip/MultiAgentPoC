@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from langchain_ollama import ChatOllama
 
+from multiagent_poc.agents.abbreviations import strip_invented_expansions
 from multiagent_poc.config import settings
 from multiagent_poc.intents import Intent
 from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
@@ -36,10 +37,10 @@ Zasady:
   wartość, albo placeholder, nigdy jedno i drugie.
 - SKRÓTY — reguła bezwzględna: skrótu (WZ, HACCP, e-ZLA, FIFO) NIGDY nie rozwijaj.
   Pisz sam skrót, bez nawiasu z wyjaśnieniem, chyba że rozwinięcie dosłownie występuje
-  w dostarczonym tekście.
-  DOBRZE: "Brakuje dwóch palet względem WZ."
-  ŹLE:    "Brakuje dwóch palet względem Wydania Zewnętrznego (WZ)."
-  ŹLE:    "Brakuje dwóch palet względem Widza Zlecenia (WZ)."
+  w dostarczonym tekście. Poniższe fragmenty ilustrują wyłącznie zapis skrótu:
+  DOBRZE: "…zgodnie z kartą HACCP…"
+  ŹLE:    "…zgodnie z kartą HACCP (Analiza Zagrożeń i Krytycznych Punktów)…"
+  ŹLE:    "…zgodnie z Kartą Higieny (HACCP)…"
 - Odpowiedz WYŁĄCZNIE treścią dokumentu, gotową do wklejenia do systemu wewnętrznego —
   bez dodatkowego komentarza, bez "Oto dokument:" na początku."""
 
@@ -133,4 +134,8 @@ def draft_document(
         config={"callbacks": [get_callback_handler()]},
     )
 
-    return DraftedDocument(doc_type=spec.doc_type, text=response.content, requires_review=spec.requires_human_review)
+    # Same deterministic guard as the answering agent — an invented expansion
+    # is worse in a filed document than in a chat reply.
+    clean_text = strip_invented_expansions(response.content, f"{context}\n{attachment_text or ''}")
+
+    return DraftedDocument(doc_type=spec.doc_type, text=clean_text, requires_review=spec.requires_human_review)

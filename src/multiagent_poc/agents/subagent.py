@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import chromadb
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 
+from multiagent_poc.agents.abbreviations import strip_invented_expansions
 from multiagent_poc.config import settings
 from multiagent_poc.intents import INTENT_RUNBOOK_MAP, Intent
 from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
@@ -91,4 +92,8 @@ def answer(
         config={"callbacks": [get_callback_handler()]},
     )
 
-    return AgentAnswer(text=response.content, sources=sorted({c.source for c in chunks}), chunks=chunks)
+    # The prompt asks the model not to invent abbreviation expansions; this
+    # enforces it deterministically, because the model does not comply reliably.
+    clean_text = strip_invented_expansions(response.content, f"{context}\n{attachment_text or ''}")
+
+    return AgentAnswer(text=clean_text, sources=sorted({c.source for c in chunks}), chunks=chunks)

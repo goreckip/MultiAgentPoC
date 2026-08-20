@@ -17,10 +17,14 @@ do człowieka — nie zgaduj i nie korzystaj z wiedzy spoza kontekstu.
 
 SKRÓTY — reguła bezwzględna: skrótu (WZ, HACCP, e-ZLA, FIFO) NIGDY nie
 rozwijaj. Pisz sam skrót, bez nawiasu z wyjaśnieniem, chyba że rozwinięcie
-dosłownie występuje w dostarczonym kontekście.
-DOBRZE: "Odnotuj brak na WZ z podpisem kierowcy."
-ŹLE:    "Odnotuj brak na WZ (Wydanie Zewnętrzne) z podpisem kierowcy."
-ŹLE:    "Odnotuj brak na Widoku Zamówienia (WZ) z podpisem kierowcy." """
+dosłownie występuje w dostarczonym kontekście. Poniższe fragmenty ilustrują
+wyłącznie zapis skrótu — nie są wzorem długości ani treści odpowiedzi:
+DOBRZE: "…zgodnie z kartą HACCP…"
+ŹLE:    "…zgodnie z kartą HACCP (Analiza Zagrożeń i Krytycznych Punktów)…"
+ŹLE:    "…zgodnie z Kartą Higieny (HACCP)…"
+
+Odpowiadaj tak wyczerpująco, jak pozwala kontekst: wypunktuj kolejne kroki
+procedury i wskaż sekcję runbooka, z której korzystasz."""
 
 
 @dataclass

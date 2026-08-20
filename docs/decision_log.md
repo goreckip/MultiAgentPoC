@@ -679,10 +679,30 @@ etapie, surowy materiał pod przyszłe STAR.
      asercja w teście dopuszczają rozwinięcie występujące dosłownie w
      kontekście.
 
-  Sam prompt też wymagał wzmocnienia: zwykłe „nie rozwijaj skrótów" model
-  ignorował: dopiero wersja z jawnymi przykładami DOBRZE/ŹLE zaczęła działać.
-  Uczciwe zastrzeżenie: model jest stochastyczny, jeden zielony przebieg nie
-  jest dowodem — ale test zostaje w zestawie jako siatka bezpieczeństwa.
+  3. **Prompt tego nie rozwiązał — dopiero kod.** Kolejne rundy: (a) zwykła
+     reguła „nie rozwijaj skrótów" — ignorowana; (b) reguła z przykładami
+     DOBRZE/ŹLE — zadziałała na jeden przebieg, po czym **przykład stał się
+     szablonem**: model zaczął zwracać zdanie z przykładu („Odnotuj brak na WZ
+     z podpisem kierowcy.") jako *całą* odpowiedź, gubiąc kroki procedury;
+     (c) przykłady przepisane na urwane fragmenty z innego runbooka + jawna
+     instrukcja „odpowiadaj wyczerpująco" — odpowiedzi wróciły do normy, ale
+     model i tak wyprodukował kolejny wymysł („Wariant Zgodności"), łapiąc
+     czerwony test end-to-end.
+
+     **Wniosek:** przy modelu tej klasy zgodność z instrukcją nie jest
+     problemem promptowym, tylko inżynierskim. Powstał
+     `agents/abbreviations.py` — deterministyczny strażnik, który przepuszcza
+     rozwinięcie skrótu **tylko wtedy, gdy dosłownie występuje w kontekście**
+     podanym modelowi, a resztę sprowadza do samego skrótu. Stosowany do
+     wyjścia obu agentów. Reguła w prompcie zostaje jako pierwsza linia obrony,
+     ale gwarancję daje kod. 10 testów jednostkowych — po jednym na każde
+     rozwinięcie, które model faktycznie wyprodukował, plus przypadki
+     negatywne (legalne „listu przewozowego (WZ)" i zwykłe nawiasy zostają
+     nietknięte).
+
+     To jest, moim zdaniem, najbardziej wartościowa obserwacja z całego
+     projektu: **iterowanie promptu ma punkt, w którym przestaje się opłacać**,
+     i trzeba umieć go rozpoznać zamiast dokładać kolejne zdanie do instrukcji.
 
 - **Wymaganie 2.4 (pytania dwuznaczne) — zamknięte przez zmianę definicji
   „sukcesu".** Wcześniej wisiało jako 🚧, bo klasyfikator „nie rozróżnia ich

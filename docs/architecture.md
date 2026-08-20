@@ -25,7 +25,7 @@ patrz główny [`README.md`](../README.md).
 6. Human-in-the-loop (`interrupt()` w LangGraph + współdzielona kolejka) — ✅
 7. Observability (Langfuse Cloud, free tier) — ✅
 
-## Co istnieje dzisiaj (2026-08-20, po Sprincie 7)
+## Co istnieje dzisiaj (2026-08-20, po Sprincie 10)
 
 ### Zaimplementowane i przetestowane
 
@@ -50,7 +50,8 @@ patrz główny [`README.md`](../README.md).
 | Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik. Treść PDF (po skanie AV) jest parsowana zawsze i niesiona w `PipelineResult.attachment_text` do obu agentów; dodatkowo służy do reklasyfikacji, gdy pytanie samo w sobie miało zbyt niską pewność. |
 | Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
 | Walidacja danych wejściowych | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) | PESEL (regex + suma kontrolna), prompt injection, prośby o dane osób trzecich → twardy odrzut; zły format numeru zamówienia → flaga, nie blokada. |
-| Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja ze Sprintu 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. |
+| Subagenci per kategoria | [`src/multiagent_poc/agents/subagent.py`](../src/multiagent_poc/agents/subagent.py) | Retrieval+generacja ze Sprintu 2, ale filtrowane do runbooka danej intencji + krótki dopisek do promptu per kategoria. Widzi też treść załącznika, jeśli był (req 5.8). |
+| Strażnik rozwinięć skrótów | [`src/multiagent_poc/agents/abbreviations.py`](../src/multiagent_poc/agents/abbreviations.py) | Deterministycznie usuwa z odpowiedzi i dokumentów rozwinięcia skrótów (WZ, HACCP…), których nie ma dosłownie w kontekście. Powstał po trzech nieudanych próbach wymuszenia tego samym promptem — patrz `decision_log.md`, Sprint 10. |
 | Graf LangGraph (routing + HITL) | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) | Spina walidację+klasyfikację+gate+załącznik (`classification/pipeline.py`) z subagentem albo węzłem eskalacji przez `interrupt()`/`Command(resume=...)`, z `MemorySaver` jako checkpointerem. |
 | Demo grafu end-to-end (na żywo) | [`scripts/demo_graph.py`](../scripts/demo_graph.py) | Trzy realne przypadki: auto-odpowiedź, odrzucenie walidacji, eskalacja z pauzą i wznowieniem HITL. |
 | Streamlit UI | [`app.py`](../app.py) | Formularz pytania (+ opcjonalny upload PDF), panel HITL operatora, historia rozmowy ze szczegółami technicznymi. Jedna strona, dwie sekcje — patrz decision log po uzasadnienie. |
@@ -63,7 +64,7 @@ patrz główny [`README.md`](../README.md).
 | Drugi agent — drafting agent | [`src/multiagent_poc/agents/drafting_agent.py`](../src/multiagent_poc/agents/drafting_agent.py) | Generuje gotowe dokumenty (zgłoszenia, karty zdarzeń, pisma) dla 7/8 kategorii, reużywając chunków z `subagent.answer()`. Brakujące dane → jawny placeholder `[uzupełnij: ...]`, nie zgadywanie. Kategorie wrażliwe (BHP, HR) mają `requires_human_review=True`. |
 | Węzeł zatwierdzania dokumentu w grafie | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`document_review_node`) | Dla dokumentów wrażliwych — pauzuje graf przez `interrupt()` (payload `kind="document_review"`), wznawia z zatwierdzoną/edytowaną treścią, procedural `answer` przeżywa pauzę obok `draft_text`. |
 
-**Zweryfikowane działanie:** `pytest` (52 szybkie testy + 4 wolne end-to-end
+**Zweryfikowane działanie:** `pytest` (62 szybkie testy + 4 wolne end-to-end
 uruchamiane przez `pytest -m slow`, w tym testy wymagające
 Ollamy), pełny graf na żywo (auto-odpowiedź z Ollama, odrzucenie walidacji,
 pauza/wznowienie HITL) — patrz wpisy "Sprint 3"-"Sprint 7" w `decision_log.md`,
