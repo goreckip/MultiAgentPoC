@@ -12,6 +12,7 @@ warstwą walidacji danych wejściowych, której w tamtym projekcie zabrakło.
 Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/decision_log.md).
 
 **Dokumentacja:**
+[case study (opis, architektura, walkthrough z realnym trace'em)](docs/case_study.md) ·
 [architektura i stan projektu](docs/architecture.md) ·
 [diagram sekwencji docelowego procesu](docs/sequence_diagram.md) ·
 [lista wymagań ze statusem realizacji](docs/requirements.md)
