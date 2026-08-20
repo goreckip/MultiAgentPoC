@@ -4,6 +4,10 @@
 nieautoryzowany przez Żabka Polska sp. z o.o.**
 Repo: [github.com/goreckip/MultiAgentPoC](https://github.com/goreckip/MultiAgentPoC)
 
+> Wersja do wysyłki mailem: [`case_study.html`](case_study.html) — jeden
+> samodzielny plik, bez zależności sieciowych, z interaktywnym odtworzeniem
+> przebiegu krok po kroku i diagramem grafu jako wbudowanym SVG.
+
 ---
 
 ## 1. Kontekst i cel

@@ -1,0 +1,632 @@
+<title>Multi-Agent Retail Ops Assistant — Case Study</title>
+<style>
+  :root {
+    --ink: #14201A;
+    --ink-soft: #47554C;
+    --ink-faint: #75857A;
+    --paper: #FCFCFA;
+    --mist: #EFF4F0;
+    --mist-strong: #E2EBE4;
+    --line: #D6E1D9;
+    --green-dark: #045C22;
+    --green: #00A855;
+    --green-tint: #E6F5EC;
+    --amber: #FFD500;
+    --amber-ink: #3A3000;
+    --alert: #B3421C;
+    --radius: 10px;
+    --measure: 44rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #E8EFE9; --ink-soft: #A7B9AC; --ink-faint: #7E8F84;
+      --paper: #0D1510; --mist: #151F19; --mist-strong: #1B2721; --line: #253229;
+      --green-dark: #2AA85F; --green: #35D780; --green-tint: #11291B;
+      --amber: #FFD500; --amber-ink: #2A2400; --alert: #E8794E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #E8EFE9; --ink-soft: #A7B9AC; --ink-faint: #7E8F84;
+    --paper: #0D1510; --mist: #151F19; --mist-strong: #1B2721; --line: #253229;
+    --green-dark: #2AA85F; --green: #35D780; --green-tint: #11291B;
+    --amber: #FFD500; --amber-ink: #2A2400; --alert: #E8794E;
+  }
+  :root[data-theme="light"] {
+    --ink: #14201A; --ink-soft: #47554C; --ink-faint: #75857A;
+    --paper: #FCFCFA; --mist: #EFF4F0; --mist-strong: #E2EBE4; --line: #D6E1D9;
+    --green-dark: #045C22; --green: #00A855; --green-tint: #E6F5EC;
+    --amber: #FFD500; --amber-ink: #3A3000; --alert: #B3421C;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.62; font-size: 16.5px; -webkit-font-smoothing: antialiased; margin: 0;
+  }
+  .page { max-width: var(--measure); margin: 0 auto; padding: 2.6rem 1.4rem 5rem; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .masthead { display: flex; flex-direction: column; gap: 0.55rem; padding-bottom: 1.3rem; border-bottom: 2px solid var(--green-dark); margin-bottom: 1.1rem; }
+  .kicker { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green-dark); }
+  .masthead h1 { font-size: clamp(1.75rem, 4.2vw, 2.4rem); line-height: 1.1; margin: 0; font-weight: 800; letter-spacing: -0.015em; text-wrap: balance; }
+  .masthead .sub { color: var(--ink-soft); font-size: 1.02rem; max-width: 38rem; margin: 0; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.45rem; }
+  .links a { font-size: 0.85rem; font-weight: 600; color: var(--green-dark); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.85rem; background: var(--mist); }
+  .links a:hover, .links a:focus-visible { border-color: var(--green); background: var(--green-tint); }
+
+  .disclaimer { display: flex; gap: 0.6rem; align-items: flex-start; background: var(--amber); color: var(--amber-ink); border-radius: var(--radius); padding: 0.75rem 0.95rem; font-size: 0.86rem; font-weight: 600; line-height: 1.45; margin-bottom: 2.2rem; }
+
+  section { margin-top: 2.7rem; }
+  .eyebrow { display: flex; align-items: center; gap: 0.6rem; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.5rem; }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.012em; margin: 0 0 0.9rem 0; text-wrap: balance; }
+  h3 { font-size: 1.06rem; font-weight: 700; margin: 1.6rem 0 0.6rem 0; }
+  p { margin: 0 0 0.9rem 0; }
+  p.lede { color: var(--ink-soft); font-size: 1.01rem; }
+  a { color: var(--green-dark); }
+  ul, ol { padding-left: 1.25rem; margin: 0 0 0.9rem 0; }
+  li { margin-bottom: 0.42rem; }
+  code { font-family: ui-monospace, "SF Mono", Consolas, monospace; background: var(--mist); padding: 0.1rem 0.34rem; border-radius: 4px; font-size: 0.87em; }
+
+  blockquote { margin: 0.9rem 0; padding: 0.7rem 1rem; border-left: 3px solid var(--green); background: var(--mist); border-radius: 0 8px 8px 0; color: var(--ink-soft); font-style: italic; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); margin: 0.95rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.91rem; }
+  th, td { text-align: left; padding: 0.52rem 0.65rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--ink-faint); font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  tr:last-child td { border-bottom: none; }
+  .check { color: var(--green-dark); font-weight: 700; }
+
+  .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin: 1rem 0; }
+  @media (max-width: 640px) { .agent-grid { grid-template-columns: 1fr; } }
+  .agent-card { background: var(--mist); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.95rem 1.05rem; }
+  .agent-card .role { font-size: 0.73rem; font-weight: 700; color: var(--green-dark); letter-spacing: 0.06em; text-transform: uppercase; }
+  .agent-card h4 { margin: 0.28rem 0 0.4rem 0; font-size: 1rem; }
+  .agent-card p { margin: 0; font-size: 0.89rem; color: var(--ink-soft); }
+
+  .perf-note { background: var(--mist-strong); border-left: 3px solid var(--green-dark); border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; font-size: 0.9rem; margin: 1rem 0; }
+  .perf-note strong { color: var(--green-dark); }
+
+  /* ---------- Player ---------- */
+  .player { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--mist); margin: 1.2rem 0 1rem; }
+  .player-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); background: var(--mist-strong); }
+  .player-tabs button {
+    flex: 1; border: none; background: transparent; padding: 0.7rem 0.6rem; cursor: pointer;
+    font: inherit; font-size: 0.85rem; font-weight: 700; color: var(--ink-faint); border-bottom: 2.5px solid transparent;
+  }
+  .player-tabs button[aria-selected="true"] { color: var(--green-dark); border-bottom-color: var(--green-dark); background: var(--mist); }
+  .player-tabs button:focus-visible { outline: 2px solid var(--green); outline-offset: -3px; }
+
+  .scenario-head { padding: 0.85rem 1.05rem 0; }
+  .scenario-head .q { font-size: 0.92rem; font-style: italic; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 0 8px 8px 0; padding: 0.6rem 0.8rem; margin: 0; }
+
+  /* timeline */
+  .timeline { display: flex; gap: 0.3rem; padding: 0.85rem 1.05rem 0.6rem; }
+  .timeline button {
+    flex: 1; border: none; background: var(--mist-strong); height: 6px; border-radius: 99px; cursor: pointer; padding: 0;
+    position: relative; transition: background 0.2s;
+  }
+  .timeline button[data-state="done"] { background: var(--green); }
+  .timeline button[data-state="current"] { background: var(--green-dark); }
+  .timeline button:focus-visible { outline: 2px solid var(--green-dark); outline-offset: 3px; }
+
+  .stage { padding: 0.3rem 1.05rem 1.05rem; }
+  .stage-meta { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .stage-meta .step-no { font-size: 0.73rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint); }
+  .stage-meta .node { font-size: 0.8rem; font-weight: 700; color: var(--green-dark); }
+  .stage-meta .dur { font-size: 0.8rem; color: var(--ink-soft); margin-left: auto; }
+  .stage h4 { margin: 0 0 0.5rem 0; font-size: 1.05rem; }
+
+  /* fake app screen */
+  .screen { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .screen-bar { background: linear-gradient(135deg, #045C22 0%, #00A855 100%); color: #fff; padding: 0.5rem 0.75rem; font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+  .screen-body { padding: 0.8rem 0.85rem; font-size: 0.88rem; min-height: 7.5rem; display: flex; flex-direction: column; gap: 0.55rem; }
+  .ui-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); }
+  .ui-field { border: 1px solid var(--line); border-radius: 7px; padding: 0.5rem 0.6rem; background: var(--mist); color: var(--ink-soft); font-size: 0.86rem; }
+  .ui-btn { align-self: flex-start; background: var(--green); color: #fff; border-radius: 7px; padding: 0.35rem 0.9rem; font-size: 0.83rem; font-weight: 700; }
+  .ui-spinner { display: flex; align-items: center; gap: 0.5rem; color: var(--ink-soft); font-size: 0.86rem; }
+  .ui-spinner .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.25; transform: scale(0.8);} 50% { opacity: 1; transform: scale(1);} }
+  @media (prefers-reduced-motion: reduce) { .ui-spinner .dot { animation: none; opacity: 0.8; } }
+  .ui-answer { background: var(--green-tint); border-radius: 8px; padding: 0.6rem 0.7rem; font-size: 0.85rem; line-height: 1.5; }
+  .ui-answer ol { margin: 0.35rem 0 0 0; padding-left: 1.1rem; }
+  .ui-answer li { margin-bottom: 0.2rem; }
+  .ui-doc { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 0.7rem; font-size: 0.79rem; white-space: pre-wrap; line-height: 1.55; }
+  .ui-doc .ph { color: var(--alert); font-weight: 700; }
+  .ui-chip { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--green-tint); color: var(--green-dark); }
+  .ui-chip.warn { background: var(--amber); color: var(--amber-ink); }
+  .ui-queue { border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; padding: 0.55rem 0.7rem; background: var(--mist); font-size: 0.84rem; }
+
+  .under { margin-top: 0.7rem; border-top: 1px dashed var(--line); padding-top: 0.7rem; }
+  .under .under-label { font-size: 0.71rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); margin-bottom: 0.3rem; }
+  .under p { margin: 0 0 0.45rem 0; font-size: 0.87rem; color: var(--ink-soft); }
+  .under p:last-child { margin-bottom: 0; }
+  .under .kv { font-size: 0.81rem; color: var(--ink-soft); }
+  .under .kv b { color: var(--green-dark); font-weight: 700; }
+
+  .controls { display: flex; align-items: center; gap: 0.5rem; padding: 0 1.05rem 1.05rem; }
+  .controls button {
+    font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 0.4rem 0.85rem;
+  }
+  .controls button:hover:not(:disabled) { border-color: var(--green); }
+  .controls button:disabled { opacity: 0.4; cursor: default; }
+  .controls button.primary { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+  .controls button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+  .controls .counter { margin-left: auto; font-size: 0.8rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+  .finding { border: 1px solid var(--line); border-left: 3px solid var(--alert); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.85rem 1rem; margin: 1rem 0; background: var(--paper); }
+  .finding .tag { display: inline-block; font-size: 0.69rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--alert); margin-bottom: 0.4rem; }
+  .finding p { margin: 0; font-size: 0.91rem; }
+
+  .insight { border: 1px solid var(--line); border-left: 3px solid var(--green-dark); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.85rem 1rem; margin: 1rem 0; background: var(--green-tint); }
+  .insight .tag { display: inline-block; font-size: 0.69rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green-dark); margin-bottom: 0.4rem; }
+  .insight p { margin: 0; font-size: 0.91rem; }
+
+  .trace { background: var(--mist); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; font-size: 0.79rem; overflow-x: auto; line-height: 1.7; }
+  .trace .num { color: var(--green-dark); font-weight: 700; }
+  .trace .dim { color: var(--ink-faint); }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 1rem 0; }
+  @media (max-width: 640px) { .metric-grid { grid-template-columns: 1fr; } }
+  .metric { background: var(--mist); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.85rem 0.95rem; }
+  .metric .val { font-size: 1.65rem; font-weight: 800; color: var(--green-dark); font-family: ui-monospace, "SF Mono", Consolas, monospace; line-height: 1.1; }
+  .metric .label { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.25rem; }
+
+  footer { margin-top: 3rem; padding-top: 1.3rem; border-top: 1px solid var(--line); font-size: 0.81rem; color: var(--ink-faint); font-style: italic; }
+</style>
+
+<div class="page">
+
+  <div class="masthead">
+    <div class="kicker">Case Study · Projekt portfolio</div>
+    <h1>Multi-Agent Retail Ops Assistant</h1>
+    <p class="sub">Asystent operacyjny dla franczyzobiorców sieci convenience — klasyfikacja intencji, RAG nad runbookami, walidacja, human-in-the-loop, dwaj agenci per kategoria. Zbudowany od zera, w pełni obserwowany, uczciwie zewaluowany.</p>
+    <div class="links">
+      <a href="https://github.com/goreckip/MultiAgentPoC" target="_blank" rel="noopener">Repozytorium GitHub →</a>
+      <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/docs/sequence_diagram.md" target="_blank" rel="noopener">Diagram sekwencji</a>
+      <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/docs/decision_log.md" target="_blank" rel="noopener">Log decyzji</a>
+      <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/docs/requirements.md" target="_blank" rel="noopener">Status wymagań</a>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <span>⚠</span>
+    <span>Niezależny projekt portfolio. Paleta wizualna inspirowana publiczną stroną Żabka.pl (kolory wyprowadzone z jej opublikowanego CSS) — projekt nie jest związany z ani autoryzowany przez Żabka Polska sp. z o.o., nie zawiera loga ani innych znaków zastrzeżonych, a kontekst biznesowy jest w całości fikcyjny.</span>
+  </div>
+
+  <section>
+    <div class="eyebrow">Kontekst</div>
+    <h2>Co to jest</h2>
+    <p>Franczyzobiorcy i pracownicy zadają pytania proceduralne — dostawy, reklamacje, płatności, BHP, HR, higiena, awarie techniczne, skargi klienta. System klasyfikuje intencję, sprawdza <em>pewność</em> tej klasyfikacji i albo odpowiada na bazie wewnętrznych runbooków, albo eskaluje do człowieka. Nigdy nie zgaduje.</p>
+    <p>Projekt świadomie doprowadzony do końca łącznie z warstwami, które w projektach tego typu bywają pierwsze do wycięcia: <strong>walidacją danych wejściowych</strong>, <strong>human-in-the-loop</strong> i <strong>ewaluacją</strong>.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Architektura</div>
+    <h2>Siedem warstw, wszystkie działające</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Warstwa</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Klasyfikacja intencji (9 kategorii)</td><td class="check">✓</td></tr>
+          <tr><td>2 · Confidence gate</td><td class="check">✓</td></tr>
+          <tr><td>3 · RAG nad runbookami (Chroma + Ollama)</td><td class="check">✓</td></tr>
+          <tr><td>4 · Dwaj agenci per kategoria</td><td class="check">✓</td></tr>
+          <tr><td>5 · Walidacja danych wejściowych</td><td class="check">✓</td></tr>
+          <tr><td>6 · Human-in-the-loop (kolejka współdzielona)</td><td class="check">✓</td></tr>
+          <tr><td>7 · Observability (Langfuse Cloud)</td><td class="check">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Graf wykonawczy — topologia 1:1 z kodu</h3>
+    <p>Poniższy diagram odwzorowuje <code>build_graph()</code> z <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/graph/pipeline_graph.py" target="_blank" rel="noopener">pipeline_graph.py</a> — węzły i krawędzie odpowiadają dokładnie wywołaniom <code>add_node</code> / <code>add_conditional_edges</code>. Żółte węzły <strong>wstrzymują graf</strong> i czekają na człowieka; czerwony kończy pytanie bez wywołania LLM-a.</p>
+
+    <pre class="mermaid">
+flowchart TD
+    S([START]) --> CLS["classify&lt;br/&gt;classify_node"]
+
+    CLS -->|"rejected"| REJ["rejected&lt;br/&gt;rejected_node"]
+    CLS -->|"should_escalate"| ESC["escalate&lt;br/&gt;escalate_node"]
+    CLS -->|"w pozostalych przypadkach"| AUTO["auto_answer&lt;br/&gt;auto_answer_node"]
+
+    AUTO -->|"draft_pending_review"| REV["document_review&lt;br/&gt;document_review_node"]
+    AUTO -->|"end"| E([END])
+
+    ESC -.->|"interrupt, potem resume"| E
+    REV -.->|"interrupt, potem resume"| E
+    REJ --> E
+
+    classDef pause fill:#FFF6CC,stroke:#B38F00,color:#3A3000
+    classDef stop fill:#FCE4DC,stroke:#B3421C,color:#4A1B0A
+    classDef work fill:#E6F5EC,stroke:#045C22,color:#0C2A16
+    class ESC,REV pause
+    class REJ stop
+    class CLS,AUTO work
+</pre>
+
+    <p style="font-size:0.88rem; color:var(--ink-soft)">Pełny opis węzłów, obu rozgałęzień warunkowych i mechanizmu pauzy: <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/docs/graph_diagram.md" target="_blank" rel="noopener">docs/graph_diagram.md →</a></p>
+
+    <h3>Dwaj agenci, nie jeden</h3>
+    <p>Każda z 7 kategorii procesowych ma dwóch agentów o <em>różnych rolach</em> — nie dwie kopie tego samego promptu.</p>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <div class="role">Agent · rola 1</div>
+        <h4>Subagent odpowiedzi</h4>
+        <p>Odpowiada na pytanie proceduralne. Retrieval przefiltrowany wyłącznie do runbooka swojej kategorii — <code>agents/subagent.py</code>.</p>
+      </div>
+      <div class="agent-card">
+        <div class="role">Agent · rola 2</div>
+        <h4>Drafting agent</h4>
+        <p>Generuje gotowy dokument (zgłoszenie, karta zdarzenia), reużywając kontekstu pobranego przez subagenta. Brak danych → placeholder, nie zgadywanie — <code>agents/drafting_agent.py</code>.</p>
+      </div>
+    </div>
+
+    <div class="perf-note">
+      <strong>Uwaga o czasach w tym dokumencie.</strong> Na potrzeby PoC model działa <strong>lokalnie przez Ollamę, na CPU, bez GPU i bez płatnego API</strong> (<code>llama3.1:8b</code>). Skutek: jedno wywołanie LLM trwa ~2 minuty, pełny cykl z dwoma agentami ~4,5 minuty. To wyłącznie konsekwencja decyzji „wszystko lokalne i darmowe" — na modelu hostowanym (Claude, GPT) te same kroki wykonują się w kilka sekund. Architektura, prompty i graf pozostają bez zmian; zmienia się wyłącznie dostawca modelu w <code>config.py</code>. Wszystkie kroki nie-LLM (walidacja, klasyfikacja, routing, gate) są rzędu milisekund.
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Nagranie działania · krok po kroku</div>
+    <h2>Jak to działa — odtworzenie realnego przebiegu</h2>
+    <p class="lede">Poniżej odtworzenie <strong>trzech rzeczywistych przebiegów</strong>, wszystkie z domeny zamówień i dostaw. Wszystkie treści, czasy i liczby tokenów pochodzą z faktycznego wykonania oraz z trace'ów pobranych z Langfuse API — nic nie jest ilustracyjne. <strong>A</strong> i <strong>B</strong> to niemal identyczne pytania potraktowane zupełnie inaczej; <strong>C</strong> to znów pytanie z A, tym razem z załączonym PDF zamówienia. Przełączaj kroki, żeby zobaczyć, co widzi użytkownik i co dzieje się pod spodem.</p>
+
+    <div class="player">
+      <div class="player-tabs" role="tablist" aria-label="Wybór scenariusza">
+        <button type="button" role="tab" id="tab-a" aria-selected="true" aria-controls="stage">A · Wysoka pewność</button>
+        <button type="button" role="tab" id="tab-b" aria-selected="false" aria-controls="stage">B · Niska pewność → eskalacja</button>
+        <button type="button" role="tab" id="tab-c" aria-selected="false" aria-controls="stage">C · Z załącznikiem PDF</button>
+      </div>
+
+      <div class="scenario-head">
+        <p class="q" id="scenario-q"></p>
+      </div>
+
+      <div class="timeline" id="timeline" aria-label="Kroki przebiegu"></div>
+
+      <div class="stage" id="stage" role="tabpanel" aria-labelledby="tab-a">
+        <div class="stage-meta">
+          <span class="step-no" id="step-no"></span>
+          <span class="node mono" id="step-node"></span>
+          <span class="dur mono" id="step-dur"></span>
+        </div>
+        <h4 id="step-title"></h4>
+        <div class="screen">
+          <div class="screen-bar">🐸 Retail Ops Assistant</div>
+          <div class="screen-body" id="screen-body"></div>
+        </div>
+        <div class="under">
+          <div class="under-label">Co dzieje się pod spodem</div>
+          <div id="under-body"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-prev">← Wstecz</button>
+        <button id="btn-next" class="primary">Dalej →</button>
+        <button id="btn-play">▶ Odtwórz</button>
+        <span class="counter" id="counter"></span>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span class="tag">Czego uczy zestawienie A i B</span>
+      <p>Dwa pytania o <em>to samo zdarzenie biznesowe</em> — brakujące palety, kierowca odjechał — potraktowane zupełnie inaczej. To nie przypadek, tylko zaprojektowane działanie confidence gate'u. Odsłania też realną słabość klasyfikatora: dodanie numeru zamówienia do treści pogarsza klasyfikację, przeciągając ją w stronę <code>płatności</code>. <strong>Z perspektywy produktowej to zachowanie pożądane</strong> — system, który przy niepewności eskaluje w 3 sekundy, jest lepszy niż taki, który po 4 minutach wygeneruje pewnie brzmiący, ale błędny dokument.</p>
+    </div>
+
+    <h3>Realne trace'y z Langfuse</h3>
+    <p style="font-size:0.88rem; color:var(--ink-soft)">Scenariusz A — bez załącznika:</p>
+    <div class="trace mono">handle_user_turn                    <span class="num">329.400s</span>
+├─ handle_question                    <span class="num">3.116s</span>
+│   ├─ validate_input                 <span class="dim">0.001s</span>
+│   ├─ classify_intent                <span class="num">3.113s</span>
+│   └─ confidence_gate                <span class="dim">0.000s</span>
+├─ subagent_answer                  <span class="num">217.585s</span>
+│   └─ GENERATION ChatOllama         <span class="num">213.680s</span>    <span class="dim">965 in / 286 out tok</span>
+└─ draft_document                   <span class="num">108.684s</span>
+    └─ GENERATION ChatOllama         <span class="num">107.852s</span>   <span class="dim">1136 in / 88 out tok</span></div>
+
+    <p style="font-size:0.88rem; color:var(--ink-soft); margin-top:0.9rem">Scenariusz C — z załącznikiem PDF (widoczny krok skanu AV):</p>
+    <div class="trace mono">handle_user_turn                    <span class="num">136.013s</span>
+├─ handle_question                   <span class="num">20.200s</span>
+│   ├─ validate_input                 <span class="dim">0.002s</span>
+│   ├─ attachment_malware_scan       <span class="num">16.481s</span>   <span class="dim">← ClamAV, blokujący</span>
+│   ├─ classify_intent                <span class="num">3.705s</span>
+│   └─ confidence_gate                <span class="dim">0.000s</span>
+├─ subagent_answer                   <span class="num">64.449s</span>
+│   └─ GENERATION ChatOllama          <span class="num">60.752s</span>   <span class="dim">1040 in / 109 out tok</span>
+└─ draft_document                    <span class="num">51.355s</span>
+    └─ GENERATION ChatOllama          <span class="num">50.635s</span>   <span class="dim">1226 in / 79 out tok</span></div>
+    <p style="font-size:0.86rem; color:var(--ink-soft); margin-top:0.7rem">Każde pytanie generuje taki zagnieżdżony trace — z modelem, liczbą tokenów i latencją <strong>każdego kroku z osobna</strong>, nie tylko całości. <code>total_cost</code> wychodzi <code>None</code>, bo model lokalny przez Ollamę nie ma wpisu w cenniku Langfuse; tokeny i latencja i tak dają pełną obserwowalność.</p>
+    <p style="font-size:0.86rem; color:var(--ink-soft)">Dwie rzeczy dobrze widać w tym zestawieniu: <strong>skan antywirusowy jest realnym, mierzalnym krokiem</strong> (16.5 s — <code>clamscan</code> przeładowuje ~113 MB sygnatur przy każdym wywołaniu), a <strong>rozrzut czasów LLM jest ogromny</strong> (213 s vs 61 s za tę samą pracę) — typowe dla inferencji CPU-only, zależne od stanu cache modelu.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Ewaluacja</div>
+    <h2>Nie tylko „działa" — także „jak dobrze"</h2>
+
+    <h3>Klasyfikator intencji <span style="font-weight:400; color:var(--ink-faint); font-size:0.85rem">— 20 pytań testowych</span></h3>
+    <div class="metric-grid">
+      <div class="metric"><div class="val">65%</div><div class="label">trafność top-1</div></div>
+      <div class="metric"><div class="val">5/5</div><div class="label">pytania wrażliwe zawsze eskalowane</div></div>
+      <div class="metric"><div class="val">100%</div><div class="label">PESEL / prompt injection wyłapane</div></div>
+    </div>
+    <p>Confidence gate świadomie eskaluje przy niepewności zamiast zgadywać — bezpieczeństwo ponad automatyzację.</p>
+
+    <h3>Jakość RAG <span style="font-weight:400; color:var(--ink-faint); font-size:0.85rem">— 15 pytań, trzy niezależne sygnały</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Sygnał</th><th>Wynik</th><th>Co łapie</th></tr></thead>
+        <tbody>
+          <tr><td>Retrieval hit-rate</td><td class="mono">86%</td><td>czy RAG sięgnął po właściwą sekcję</td></tr>
+          <tr><td>Pokrycie słów kluczowych</td><td class="mono">38%</td><td>tanie, deterministyczne, sztywne wobec parafraz</td></tr>
+          <tr><td>LLM-as-judge (1–5)</td><td class="mono">4.67</td><td>łapie parafrazy, ale to ten sam model co generuje</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="finding">
+      <span class="tag">Najsilniejsze odkrycie ewaluacji</span>
+      <p>Dla jednego pytania retrieval pobrał złą sekcję runbooka (nadgodziny zamiast zamiany grafiku) — model mimo to odpowiedział przekonującym, proceduralnym tonem. LLM-judge ocenił to na <strong>5/5</strong>, nie zauważając błędu. Tylko keyword-matching to wyłapał (<strong>0%</strong>). Żaden pojedynczy sygnał osobno by tego nie ujawnił — dopiero ich zestawienie obnażyło lukę.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Materiał na rozmowę</div>
+    <h2>Wybrane decyzje projektowe</h2>
+    <ul>
+      <li><strong>Section-based chunking zamiast fixed-size</strong> — realny eksperyment pokazał, że fixed-size zwracał chunk zaczynający się od uciętego słowa, bez informacji o sekcji źródłowej. Decyzja z danych, nie z intuicji.</li>
+      <li><strong>Ollama zamiast Claude/GPT</strong> — świadomy trade-off jakość i szybkość vs koszt/lokalność, z pełną świadomością, że w produkcji wybór byłby odwrotny.</li>
+      <li><strong>Walidacja przed klasyfikacją, nie po</strong> — dane wrażliwe nigdy nie trafiają nawet do klasyfikatora.</li>
+      <li><strong>Malware scan lokalny (ClamAV)</strong> — załączony plik nigdy nie opuszcza maszyny.</li>
+      <li><strong>Brakujące pole → placeholder, nie zgadywanie</strong> — dokument z halucynowanym numerem jest gorszy niż dokument z widocznym brakiem.</li>
+      <li><strong>Dane z załącznika bez trzeciego agenta</strong> — pierwotny plan zakładał osobnego „agenta data retrieval". Przy implementacji okazało się, że byłby pustym opakowaniem: treść załącznika to <em>dodatkowy kontekst</em> dla agentów, którzy już istnieją, a nie zadanie wymagające własnego rozumowania. Trzeci agent = trzecie wywołanie modelu (+2 min na CPU) bez zysku jakościowego. Odrzucenie własnego wcześniejszego pomysłu wyszło taniej niż jego dowiezienie.</li>
+      <li><strong>Deterministyczny strażnik zamiast kolejnej iteracji promptu</strong> — po trzech nieudanych rundach pracy nad promptem uznałem, że to nie jest problem promptowy. Rozwiązaniem jest kod sprawdzający wynik, a nie kolejne zaklinanie modelu.</li>
+    </ul>
+    <p style="font-size:0.86rem">Pełny, surowy log — co, dlaczego, z jakim skutkiem, po każdym sprincie: <a href="https://github.com/goreckip/MultiAgentPoC/blob/main/docs/decision_log.md" target="_blank" rel="noopener">docs/decision_log.md →</a></p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Uczciwie, nie ukryte</div>
+    <h2>Znane ograniczenia</h2>
+    <ul>
+      <li>Klasyfikator ma 65% top-1 accuracy — widać to wprost w scenariuszu B powyżej.</li>
+      <li><strong>Wyniki są niedeterministyczne i to jest ryzyko produktowe, nie usterka do wyprompotowania.</strong> Ten sam prompt i to samo pytanie w dwóch kolejnych przebiegach dały raz cytowanie sekcji <b>4.1</b>, raz <b>4.3</b>; w jednym przebiegu dokument zamiast czystego placeholdera zawierał <b>zmyślony link markdown</b> z nieistniejącym adresem. Właśnie dlatego HITL i walidacja nie są ozdobnikiem — przy modelu tej klasy trzeba projektować pod założenie, że model czasem zawiedzie.</li>
+      <li><strong>Zmyślanie rozwinięć skrótów — najciekawsza porażka projektu.</strong> Runbooki piszą skróty bez rozwinięć (WZ, HACCP), a model uporczywie wypełniał tę lukę zgadywaniem. <b>Trzy rundy pracy nad promptem</b> — zwykła reguła, przykłady DOBRZE/ŹLE, przykłady jako urwane fragmenty — i za każdym razem wracał z <em>nowym</em> wymysłem: „Wywiad Zamówienia", „Widok Zamówienia", „Zamówienia Zamkowego", „Widza Zlecenia", wreszcie „Wariant Zgodności". Po drodze: pierwszy test regresyjny listował znane złe frazy i przechodził na zielono, gdy model wymyślił kolejną; a przykład „DOBRZE" w prompcie stał się szablonem — model zaczął zwracać to jedno zdanie jako całą odpowiedź, gubiąc kroki procedury.</li>
+      <li><strong>Wniosek, który uważam za najważniejszy w projekcie:</strong> przy modelu tej klasy zgodność z instrukcją nie jest problemem promptowym, tylko inżynierskim. Zadziałał dopiero <b>deterministyczny strażnik w kodzie</b> (<code>agents/abbreviations.py</code>): rozwinięcie skrótu przechodzi tylko wtedy, gdy <em>dosłownie występuje w kontekście</em> podanym modelowi — reszta jest sprowadzana do samego skrótu. Reguła w prompcie została jako pierwsza linia obrony, ale gwarancję daje kod. 10 testów jednostkowych, po jednym na każdy wymysł, który model faktycznie wyprodukował.</li>
+      <li>LLM-as-judge to ten sam model, który generuje odpowiedzi — czasem niespójny sędzia (złapany przypadek: 1/5 dla odpowiedzi faktycznie zgodnej z procedurą).</li>
+      <li>Czasy odpowiedzi wynikają wyłącznie z lokalnej Ollamy na CPU — patrz uwaga wyżej.</li>
+      <li>Kolejka HITL i checkpointer grafu żyją w pamięci procesu — nie przetrwają restartu (świadome uproszczenie PoC; w produkcji Redis/Postgres).</li>
+    </ul>
+  </section>
+
+  <footer>
+    Niezależny projekt portfolio, niezwiązany z i nieautoryzowany przez Żabka Polska sp. z o.o. Kontekst biznesowy fikcyjny — żadne dane, procedury ani znaki towarowe Żabki nie zostały użyte. Pełny kod, dokumentacja i log decyzji: <a href="https://github.com/goreckip/MultiAgentPoC" target="_blank" rel="noopener">github.com/goreckip/MultiAgentPoC</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const FORM = `
+    <div class="ui-label">Pytanie</div>
+    <div class="ui-field">{Q}</div>
+    <div class="ui-label">Załącznik (opcjonalnie, PDF)</div>
+    <div class="ui-field" style="color:var(--ink-faint)">— brak —</div>
+    <div class="ui-btn">Wyślij</div>`;
+
+  const SPIN = `
+    <div class="ui-spinner"><span class="dot"></span> Przetwarzanie (walidacja → klasyfikacja → RAG/eskalacja)…</div>`;
+
+  const scenarios = {
+    a: {
+      q: "Przy odbiorze towaru brakuje dwóch palet względem WZ, kierowca już odjechał, dostawa była dziś rano od Centralnego Dostawcy, co mam zrobić?",
+      steps: [
+        {
+          node: "validate_input", dur: "0.000 s", title: "Walidacja danych wejściowych",
+          screen: FORM,
+          under: `<p>Pytanie sprawdzane pod kątem numeru PESEL (z sumą kontrolną), prób prompt injection, próśb o dane osób trzecich i formatu numeru zamówienia.</p>
+                  <p class="kv">Wynik: <b>czysto</b> → przechodzi dalej. Gdyby zawierało dane wrażliwe, zostałoby odrzucone <em>zanim</em> dotarłoby do klasyfikatora czy jakiegokolwiek LLM-a.</p>`
+        },
+        {
+          node: "classify_intent", dur: "3.070 s", title: "Klasyfikacja intencji",
+          screen: SPIN,
+          under: `<p>k-NN (k=3) nad embeddingami przykładowych fraz w bazie wektorowej Chroma. Bez wywołania LLM-a — same embeddingi.</p>
+                  <p class="kv">Wynik: <b>dostawy</b>, confidence <b>0.67</b> · głosy sąsiadów: dostawy 2, bhp 1.</p>`
+        },
+        {
+          node: "confidence_gate", dur: "0.000 s", title: "Confidence gate — decyzja o routingu",
+          screen: SPIN,
+          under: `<p>Porównanie pewności z progiem skonfigurowanym w <code>config.py</code>.</p>
+                  <p class="kv">0.67 ≥ próg 0.6 → <b>auto-obsługa</b>, routing do subagenta <code>dostawy</code>. Bez eskalacji do człowieka.</p>`
+        },
+        {
+          node: "subagent_answer", dur: "217.6 s", title: "Subagent odpowiada na pytanie",
+          screen: `<div class="ui-chip">intencja: dostawy · 0.67</div>
+            <div class="ui-answer">Zgodnie z opisem procedury w sekcji <strong>4.3 Pomyłka dostawcy</strong>
+              <span style="opacity:.7">[01_dostawy.md | 4. Rozbieżności ilościowe i jakościowe &gt; 4.3]</span>:
+              <ol>
+                <li>Towar odesłać z tym samym kierowcą, jeśli to możliwe.</li>
+                <li>Jeśli kierowca już odjechał — magazynować oddzielnie do czasu instrukcji z regionu, maksymalnie 5 dni roboczych.</li>
+                <li>W ciągu 24 godzin zgłosić problem przez system wewnętrzny, kategoria „Dostawy".</li>
+              </ol>
+            </div>`,
+          under: `<p>RAG przefiltrowany <strong>wyłącznie</strong> do <code>01_dostawy.md</code> — filtr metadanych w Chroma gwarantuje, że subagent nie sięgnie po cudzy runbook.</p>
+                  <p class="kv">LLM: <b>213.7 s</b> · 965 tokenów wejścia / 286 wyjścia · <code>sources=['01_dostawy.md']</code></p>
+                  <p class="kv">Odpowiedź cytuje konkretną sekcję ze ścieżką nagłówków. Skrót <b>WZ zostaje skrótem</b> — reguła w system promptcie zabrania rozwijania skrótów, których runbook sam nie rozwija.</p>`
+        },
+        {
+          node: "draft_document", dur: "108.7 s", title: "Drafting agent tworzy gotowy dokument",
+          screen: `<div class="ui-chip">📄 Zgłoszenie rozbieżności dostawy</div>
+            <div class="ui-doc">Numer zamówienia lub dostawy: <span class="ph">[uzupełnij: numer_zamowienia_lub_dostawy]</span>
+Dostawca: Centralny Dostawca
+Opis rozbieżności: Brakuje dwóch palet względem WZ
+Data dostawy: dzisiaj rano</div>`,
+          under: `<p>Drugi agent, inna rola: nie odpowiada, tylko <strong>wypełnia dokument</strong>. Reużywa tych samych fragmentów runbooka, które pobrał subagent — bez ponownego odpytywania bazy.</p>
+                  <p class="kv">LLM: <b>107.9 s</b> · 1136 tokenów wejścia / 88 wyjścia · <code>requires_human_review=False</code> → dokument trafia do pracownika od razu.</p>
+                  <p class="kv">Agent wyciągnął z pytania <b>dostawcę</b> i <b>datę</b>, a numeru zamówienia — którego w pytaniu nie było — <b>nie wymyślił, tylko oznaczył placeholderem</b>. Jak wygląda ten sam dokument, gdy numer jest w załączniku → zakładka C.</p>`
+        },
+        {
+          node: "END", dur: "329.4 s łącznie", title: "Pracownik dostaje odpowiedź i dokument",
+          screen: `<div class="ui-label">Historia rozmowy</div>
+            <div class="ui-answer" style="font-size:0.82rem">Zgodnie z sekcją 4.3: odeślij z kierowcą, a jeśli odjechał — magazynuj oddzielnie maks. 5 dni roboczych i zgłoś w ciągu 24 h.</div>
+            <div class="ui-chip">📄 Wygenerowany dokument: Zgłoszenie rozbieżności dostawy</div>
+            <div class="ui-chip" style="background:var(--mist);color:var(--ink-soft)">▸ Szczegóły techniczne: intencja dostawy · confidence 0.67</div>`,
+          under: `<p>Pracownik dostaje w jednym miejscu odpowiedź proceduralną <em>i</em> gotowy do wklejenia dokument, plus rozwijane szczegóły techniczne (intencja, pewność, źródła).</p>
+                  <p class="kv">Łącznie <b>329.4 s</b>, z czego <b>322 s</b> to dwa wywołania LLM na CPU. Cała reszta pipeline'u — walidacja, klasyfikacja, routing, gate — zajęła <b>3 sekundy</b>.</p>`
+        }
+      ]
+    },
+    b: {
+      q: "Brakuje palet w dostawie, kierowca odjechał. Zamówienie ZM-2024-00981.",
+      steps: [
+        {
+          node: "validate_input → classify_intent", dur: "2.939 s", title: "Walidacja i klasyfikacja",
+          screen: FORM,
+          under: `<p>Walidacja czysta. Klasyfikator zwraca rozproszone głosy — brak większości.</p>
+                  <p class="kv">Wynik: confidence <b>0.33</b>. Dodanie numeru zamówienia <code>ZM-2024-00981</code> do treści realnie pogorszyło klasyfikację, przeciągając ją w stronę <code>płatności</code>.</p>`
+        },
+        {
+          node: "confidence_gate", dur: "0.000 s", title: "Confidence gate zatrzymuje przepływ",
+          screen: SPIN,
+          under: `<p>0.33 &lt; próg 0.6 → efektywna intencja <code>inne</code>, <strong>eskalacja do człowieka</strong>.</p>
+                  <p class="kv">Kluczowe: <b>żaden LLM nie został wywołany</b>, żaden dokument nie powstał. System nie zgadywał — cały przebieg zajął niecałe 3 sekundy zamiast 4,5 minuty.</p>`
+        },
+        {
+          node: "interrupt()", dur: "pauza", title: "Graf wstrzymuje się z zachowanym stanem",
+          screen: `<div class="ui-chip warn">⏸ Twoje pytanie czeka na operatora</div>
+            <div class="ui-queue"><strong>Kolejka HITL · 1 pozycja</strong><br>
+            Eskalowane pytanie: „Brakuje palet w dostawie, kierowca odjechał…"<br>
+            <span style="color:var(--ink-faint);font-size:0.8rem">Powód: confidence=0.33 &lt; próg</span></div>`,
+          under: `<p>LangGraph pauzuje przez <code>interrupt()</code> — to nie błąd, tylko zaprojektowana pauza z zapisanym stanem (checkpointer).</p>
+                  <p class="kv">Pytanie trafia do <b>współdzielonej kolejki HITL</b> — widocznej dla operatora niezależnie od tego, w której sesji przeglądarki zostało zadane. Zweryfikowane w dwóch niezależnych kartach.</p>`
+        },
+        {
+          node: "Command(resume=…)", dur: "0.006 s", title: "Operator odpowiada, graf wznawia się",
+          screen: `<div class="ui-label">Panel operatora</div>
+            <div class="ui-field">Zgłoś brak przez formularz „Zgłoszenie rozbieżności dostawy" w systemie, dołącz zdjęcie WZ. Braki powyżej 500 zł zgłoś dodatkowo opiekunowi regionalnemu.</div>
+            <div class="ui-btn">Wyślij odpowiedź do pracownika</div>`,
+          under: `<p>Operator wpisuje odpowiedź w panelu HITL. Graf wznawia się dokładnie w miejscu, w którym stanął, i dostarcza ją pracownikowi jako finalną odpowiedź.</p>
+                  <p class="kv">Wznowienie: <b>0.006 s</b> — operator dostarczył gotowy tekst, więc kolejne wywołanie LLM-a nie jest potrzebne.</p>`
+        }
+      ]
+    },
+    c: {
+      q: "Przy odbiorze towaru brakuje dwóch palet względem WZ, kierowca już odjechał, dostawa była dziś rano od Centralnego Dostawcy, co mam zrobić? [+ załączony PDF zamówienia]",
+      steps: [
+        {
+          node: "upload", dur: "", title: "Pracownik dołącza PDF zamówienia",
+          screen: `<div class="ui-label">Pytanie</div>
+            <div class="ui-field">Przy odbiorze towaru brakuje dwóch palet względem WZ, kierowca już odjechał…</div>
+            <div class="ui-label">Załącznik (PDF)</div>
+            <div class="ui-field">📎 zamowienie.pdf</div>
+            <div class="ui-doc">Zamowienie nr ZM-2024-00981 / Dostawca: Centralny Dostawca Sp. z o.o. / Data dostawy: 2026-08-20 / Pozycje: 12 palet</div>`,
+          under: `<p>To <strong>dokładnie to samo pytanie</strong> co w scenariuszu A — różnica polega wyłącznie na dołączeniu wydruku zamówienia.</p>
+                  <p class="kv">Numer zamówienia nie pada w treści pytania — jest tylko w załączniku.</p>`
+        },
+        {
+          node: "attachment_malware_scan", dur: "16.5 s", title: "Skan antywirusowy — blokujący i bezwarunkowy",
+          screen: `<div class="ui-spinner"><span class="dot"></span> Skanowanie załącznika (ClamAV)…</div>`,
+          under: `<p>Zanim <em>cokolwiek</em> przeczyta zawartość pliku, załącznik przechodzi przez lokalny <strong>ClamAV</strong>. Plik nie opuszcza maszyny — świadomie zamiast skanera chmurowego.</p>
+                  <p class="kv">Odrzucenie na tym etapie przerywa całe zapytanie: parser PDF, klasyfikator ani LLM nigdy go nie zobaczą. <b>16.5 s</b> to koszt przeładowania ~113 MB sygnatur przy każdym wywołaniu <code>clamscan</code>.</p>`
+        },
+        {
+          node: "parse_pdf_text", dur: "&lt;1 s", title: "Ekstrakcja treści i przekazanie agentom",
+          screen: `<div class="ui-chip">📄 tekst wyciągnięty z PDF</div>
+            <div class="ui-doc">Zamowienie nr ZM-2024-00981
+Dostawca: Centralny Dostawca Sp. z o.o.
+Data dostawy: 2026-08-20
+Pozycje: 12 palet</div>`,
+          under: `<p>Tekst (pypdf, tylko warstwa tekstowa, bez OCR) jest niesiony w <code>PipelineResult.attachment_text</code> do <strong>obu agentów</strong>.</p>
+                  <p class="kv">W prompcie trafia jako osobno oznaczony blok — opisany jako „dane konkretnej sprawy, <b>nie procedura</b>", żeby model nie pomylił dokumentu pracownika ze źródłem procedur.</p>`
+        },
+        {
+          node: "draft_document", dur: "51.4 s", title: "Dokument wypełniony danymi z załącznika",
+          screen: `<div class="ui-chip">📄 Zgłoszenie rozbieżności dostawy</div>
+            <div class="ui-doc">Numer zamówienia lub dostawy: <b>ZM-2024-00981</b>
+Dostawca: <b>Centralny Dostawca Sp. z o.o.</b>
+Opis rozbieżności: brakuje dwóch palet względem WZ
+Data dostawy: <b>2026-08-20</b></div>`,
+          under: `<p><strong>Zero placeholderów</strong> — wszystkie cztery pola wypełnione, numer zamówienia i pełna nazwa dostawcy pochodzą wprost z załącznika.</p>
+                  <p class="kv">Dla porównania ten sam dokument bez załącznika (zakładka A): numer <span style="color:var(--alert)">[uzupełnij: …]</span>, dostawca „Centralny Dostawca" (skrócony, z treści pytania), data „dzisiaj rano" zamiast <code>2026-08-20</code>.</p>
+                  <p class="kv">Uwaga na mylącą flagę: <code>used_attachment=False</code> w tym przebiegu — ta flaga śledzi wyłącznie <b>reklasyfikację</b>, a tu klasyfikacja od razu była pewna. Znany dług nazewniczy.</p>`
+        }
+      ]
+    }
+  };
+
+  let current = "a";
+  let idx = 0;
+  let timer = null;
+
+  const $ = (id) => document.getElementById(id);
+  const timelineEl = $("timeline");
+
+  function buildTimeline() {
+    const steps = scenarios[current].steps;
+    timelineEl.innerHTML = "";
+    steps.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", "Krok " + (i + 1) + ": " + s.title);
+      b.addEventListener("click", () => { stop(); idx = i; render(); });
+      timelineEl.appendChild(b);
+    });
+  }
+
+  function render() {
+    const sc = scenarios[current];
+    const step = sc.steps[idx];
+    $("scenario-q").textContent = "„" + sc.q + "”";
+    $("step-no").textContent = "Krok " + (idx + 1);
+    $("step-node").textContent = step.node;
+    $("step-dur").textContent = step.dur;
+    $("step-title").textContent = step.title;
+    $("screen-body").innerHTML = step.screen.replace("{Q}", sc.q);
+    $("under-body").innerHTML = step.under;
+    $("counter").textContent = (idx + 1) + " / " + sc.steps.length;
+    $("btn-prev").disabled = idx === 0;
+    $("btn-next").disabled = idx === sc.steps.length - 1;
+    Array.from(timelineEl.children).forEach((b, i) => {
+      b.dataset.state = i < idx ? "done" : (i === idx ? "current" : "todo");
+    });
+  }
+
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    $("btn-play").textContent = "▶ Odtwórz";
+  }
+
+  function play() {
+    if (timer) { stop(); return; }
+    if (idx === scenarios[current].steps.length - 1) { idx = 0; render(); }
+    $("btn-play").textContent = "⏸ Pauza";
+    timer = setInterval(() => {
+      if (idx < scenarios[current].steps.length - 1) { idx++; render(); }
+      else { stop(); }
+    }, 3800);
+  }
+
+  function switchScenario(key) {
+    stop();
+    current = key;
+    idx = 0;
+    ["a", "b", "c"].forEach((k) => $("tab-" + k).setAttribute("aria-selected", String(key === k)));
+    $("stage").setAttribute("aria-labelledby", "tab-" + key);
+    buildTimeline();
+    render();
+  }
+
+  ["a", "b", "c"].forEach((k) => $("tab-" + k).addEventListener("click", () => switchScenario(k)));
+  $("btn-prev").addEventListener("click", () => { stop(); if (idx > 0) { idx--; render(); } });
+  $("btn-next").addEventListener("click", () => { stop(); if (idx < scenarios[current].steps.length - 1) { idx++; render(); } });
+  $("btn-play").addEventListener("click", play);
+
+  buildTimeline();
+  render();
+})();
+</script>

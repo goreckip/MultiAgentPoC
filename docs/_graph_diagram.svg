@@ -1,0 +1,92 @@
+<svg viewBox="0 0 760 540" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Topologia grafu LangGraph: START prowadzi do wezla classify, ktory rozgalezia sie na rejected, escalate i auto_answer; auto_answer moze prowadzic do document_review; wszystkie sciezki koncza sie w END."
+     style="width:100%;height:auto;font-family:inherit">
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--ink-faint)"/>
+    </marker>
+  </defs>
+
+  <style>
+    /* Node fills are theme-aware on purpose: the labels use var(--ink), which
+       flips to near-white in dark mode, so a fixed light fill would leave
+       white-on-pale text. Both sides of every pair are defined explicitly. */
+    .n    { rx: 9; stroke-width: 1.5; }
+    .work { fill: var(--green-tint); stroke: var(--green-dark); }
+    .pause{ fill: #FFF6CC; stroke: #B38F00; }
+    .stop { fill: #FCE4DC; stroke: var(--alert); }
+    .term { fill: var(--mist-strong); stroke: var(--ink-faint); }
+    .lbl  { font-size: 13px; font-weight: 700; fill: var(--ink); text-anchor: middle; }
+    .sub  { font-size: 11px; fill: var(--ink-soft); text-anchor: middle; }
+    .edge { fill: none; stroke: var(--ink-faint); stroke-width: 1.6; marker-end: url(#arw); }
+    .dash { stroke-dasharray: 6 4; }
+    .elbl { font-size: 11px; fill: var(--ink-soft); text-anchor: middle; }
+    .pauselbl { font-size: 10.5px; fill: #8A6D00; text-anchor: middle; font-style: italic; }
+
+    @media (prefers-color-scheme: dark) {
+      .pause { fill: #3A3000; stroke: #FFD500; }
+      .stop  { fill: #3A1810; stroke: var(--alert); }
+      .pauselbl { fill: #E0BE4A; }
+    }
+    :root[data-theme="dark"] .pause { fill: #3A3000; stroke: #FFD500; }
+    :root[data-theme="dark"] .stop  { fill: #3A1810; stroke: var(--alert); }
+    :root[data-theme="dark"] .pauselbl { fill: #E0BE4A; }
+    :root[data-theme="light"] .pause { fill: #FFF6CC; stroke: #B38F00; }
+    :root[data-theme="light"] .stop  { fill: #FCE4DC; stroke: var(--alert); }
+    :root[data-theme="light"] .pauselbl { fill: #8A6D00; }
+  </style>
+
+  <!-- edges first, so nodes paint over their endpoints -->
+  <path class="edge" d="M 380,48 L 380,80"/>
+  <path class="edge" d="M 330,136 C 250,168 175,178 122,206"/>
+  <path class="edge" d="M 380,136 L 380,206"/>
+  <path class="edge" d="M 430,136 C 512,168 588,178 638,206"/>
+  <path class="edge" d="M 645,264 L 645,326"/>
+  <path class="edge" d="M 560,224 C 470,228 452,320 420,446"/>
+  <path class="edge" d="M 115,264 C 128,352 205,432 311,462"/>
+  <path class="edge dash" d="M 380,264 L 380,446"/>
+  <path class="edge dash" d="M 592,384 C 540,424 498,452 449,466"/>
+
+  <!-- START -->
+  <rect x="318" y="12" width="124" height="36" rx="18" class="term"/>
+  <text class="lbl" x="380" y="35">START</text>
+
+  <!-- classify -->
+  <rect x="295" y="82" width="170" height="54" class="n work"/>
+  <text class="lbl" x="380" y="105">classify</text>
+  <text class="sub" x="380" y="122">classify_node</text>
+
+  <!-- rejected -->
+  <rect x="30" y="210" width="170" height="54" class="n stop"/>
+  <text class="lbl" x="115" y="233">rejected</text>
+  <text class="sub" x="115" y="250">rejected_node</text>
+
+  <!-- escalate -->
+  <rect x="295" y="210" width="170" height="54" class="n pause"/>
+  <text class="lbl" x="380" y="233">escalate</text>
+  <text class="sub" x="380" y="250">escalate_node</text>
+
+  <!-- auto_answer -->
+  <rect x="560" y="210" width="170" height="54" class="n work"/>
+  <text class="lbl" x="645" y="233">auto_answer</text>
+  <text class="sub" x="645" y="250">auto_answer_node</text>
+
+  <!-- document_review -->
+  <rect x="560" y="330" width="170" height="54" class="n pause"/>
+  <text class="lbl" x="645" y="353">document_review</text>
+  <text class="sub" x="645" y="370">document_review_node</text>
+
+  <!-- END -->
+  <rect x="318" y="448" width="124" height="36" rx="18" class="term"/>
+  <text class="lbl" x="380" y="471">END</text>
+
+  <!-- edge labels -->
+  <text class="elbl" x="196" y="166">rejected</text>
+  <text class="elbl" x="446" y="176">should_escalate</text>
+  <text class="elbl" x="566" y="158">w pozostalych</text>
+  <text class="elbl" x="566" y="174">przypadkach</text>
+  <text class="elbl" x="700" y="300">draft_pending_review</text>
+  <text class="elbl" x="470" y="330">end</text>
+  <text class="pauselbl" x="380" y="352">interrupt → resume</text>
+  <text class="pauselbl" x="560" y="437">interrupt → resume</text>
+</svg>

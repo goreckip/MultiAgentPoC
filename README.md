@@ -18,6 +18,12 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
 [diagram sekwencji docelowego procesu](docs/sequence_diagram.md) ·
 [lista wymagań ze statusem realizacji](docs/requirements.md)
 
+Case study istnieje też jako **samodzielny plik HTML do wysyłki mailem** —
+[`docs/case_study.html`](docs/case_study.html): jeden plik, zero zależności
+sieciowych (diagram jako wbudowany SVG), z interaktywnym odtworzeniem przebiegu
+krok po kroku. Budowany skryptem
+[`scripts/build_case_study_html.py`](scripts/build_case_study_html.py).
+
 ## Architektura
 
 1. **Klasyfikacja intencji** — 9 kategorii (8 procesowych + `inne`), patrz
