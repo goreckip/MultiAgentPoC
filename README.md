@@ -94,6 +94,15 @@ retrievalu ukrytego przez przekonujący ton odpowiedzi — patrz
 [`docs/decision_log.md`](docs/decision_log.md). Zostało: case study.
 Pełny status per wymaganie — patrz [`docs/requirements.md`](docs/requirements.md).
 
+## Wygląd UI
+
+Paleta kolorów i typografia (`.streamlit/config.toml`, CSS w `app.py`) są
+wizualnie inspirowane publiczną stroną Żabka.pl (kolory wyprowadzone z jej
+CSS — patrz `docs/decision_log.md`, Sprint 8), bez użycia loga ani innych
+znaków zastrzeżonych, i z jawnym zastrzeżeniem niezależności widocznym
+bezpośrednio w UI. **To niezależny projekt portfolio, niezwiązany z i
+nieautoryzowany przez Żabka Polska sp. z o.o.**
+
 ## Uruchomienie UI
 
 ```bash

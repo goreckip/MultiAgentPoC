@@ -82,6 +82,7 @@ MVP/Stretch — patrz sekcja "MVP vs. stretch goals" w oryginalnym planie.
 |---|---|---|---|---|
 | 8.1 | Streamlit UI (zadawanie pytań, wyświetlanie odpowiedzi) | ✅ (`app.py`, w tym upload PDF i szczegóły techniczne w expanderze) | 5 | Stretch |
 | 8.2 | Testy end-to-end na pełnym pipeline | ✅ (ręczna weryfikacja w przeglądarce: auto-odpowiedź, odrzucenie walidacji, HITL pause/resume — patrz `decision_log.md`) | 5 | MVP (dla samego MVP: klasyfikacja→RAG→odpowiedź) |
+| 8.3 | Restyling UI (kolory/typografia inspirowane Żabka.pl, bez znaków zastrzeżonych, z zastrzeżeniem niezależności) | ✅ (`.streamlit/config.toml` + CSS w `app.py`, kolory wyprowadzone z realnego CSS strony — patrz `decision_log.md`) | 8 | Stretch (dodane po planie bazowym, 2026-08-20) |
 
 ## Warstwa 9 — Ewaluacja i dokumentacja
 

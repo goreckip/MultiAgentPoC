@@ -558,6 +558,40 @@ etapie, surowy materiał pod przyszłe STAR.
   `draft_pending_review=True`, inaczej prosto do `END` z dokumentem już w
   stanie (widoczny w UI od razu, bez pauzy).
 
+## Sprint 8 — restyling UI (inspirowany Żabka.pl) — 2026-08-20
+
+- **Decyzja:** kolory i krój pisma wyprowadzone z realnego CSS strony
+  Żabka.pl (dostarczony przez użytkownika plik HTML), nie zgadywane —
+  dominujący kolor `#006420` (67 wystąpień w CSS strony) jako główna
+  zieleń marki, `#00B05A` jako akcent (przyciski/CTA), `#FFD500` jako
+  żółty akcent, krój `TT Commons` (zidentyfikowany w
+  `--wp--preset--font-family--base-font`).
+  **Dlaczego tak, a nie "na oko":** decyzja projektowa oparta na danych z
+  realnej strony, nie na domysłach o tym, jak wygląda marka Żabka — spójne
+  z resztą projektu (żadna inna decyzja w tym repo nie była "z gdybania").
+
+- **Decyzja:** czcionka `Inter` (Google Fonts, darmowa) zamiast `TT Commons`.
+  **Dlaczego:** `TT Commons` to font komercyjny (TypeType) — nie mam do
+  niego licencji i nie mogę go redystrybuować ani ładować z zewnętrznego
+  źródła bez uprawnień. `Inter` ma podobny, geometryczno-humanistyczny
+  charakter i jest darmowa/otwarta — świadomy kompromis "podobny duch,
+  legalne źródło".
+  **Efekt:** brak ryzyka licencyjnego, wizualnie zbliżony rezultat.
+
+- **Decyzja:** żadnych zasobów zastrzeżonych (logo, wordmark) — tylko
+  paleta kolorów i typografia, plus jawna, widoczna plakietka zastrzeżenia
+  ("Niezależny projekt portfolio... niezwiązany z i nieautoryzowany przez
+  Żabka Polska sp. z o.o.") umieszczona **bezpośrednio pod nagłówkiem**, nie
+  schowana w stopce.
+  **Dlaczego:** kolory i typografia same w sobie nie są zwykle chronione
+  prawem znaków towarowych tak jak logo/wordmark, ale użycie ich bez
+  zastrzeżenia mogłoby sugerować oficjalne powiązanie z marką — co jest
+  nieprawdą i czego chcemy jednoznacznie uniknąć, zwłaszcza że projekt
+  trafi bezpośrednio do rekrutacji w tej firmie.
+  **Efekt (zweryfikowane na żywo w przeglądarce):** baner startowy z
+  gradientem zieleni marki, emoji żaby (nie logo) zamiast nazwy/ikony
+  firmy, plakietka zastrzeżenia widoczna od razu po wejściu na stronę.
+
 ## Szablon na kolejne sprinty
 
 ```

@@ -24,6 +24,65 @@ from multiagent_poc.intents import INTENT_DESCRIPTIONS
 
 st.set_page_config(page_title="Retail Ops Assistant (PoC)", page_icon="🧭", layout="centered")
 
+# Visual style loosely inspired by zabka.pl's public marketing site (colors extracted
+# from its published CSS: dominant brand green #006420, accent green #00B05A, yellow
+# #FFD500). Font is Inter (free, Google Fonts) as a stand-in for the site's licensed
+# "TT Commons" — that font isn't ours to redistribute. This is an independent,
+# unofficial portfolio project, not affiliated with or endorsed by Żabka Polska sp. z o.o.
+# — see the disclaimer banner below. No Żabka logo or other trademarked assets are used.
+_BRAND_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+.zabka-inspired-banner {
+    background: linear-gradient(135deg, #006420 0%, #00B05A 100%);
+    color: #ffffff;
+    padding: 1.1rem 1.4rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+.zabka-inspired-banner h1 {
+    color: #ffffff !important;
+    font-weight: 800;
+    font-size: 1.6rem;
+    margin: 0 0 0.2rem 0;
+}
+.zabka-inspired-banner p {
+    color: #EDF8ED;
+    margin: 0;
+    font-size: 0.92rem;
+}
+
+.disclaimer-badge {
+    display: inline-block;
+    background: #FFD500;
+    color: #212121;
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.stButton > button, .stFormSubmitButton > button {
+    background-color: #00B05A;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.stButton > button:hover, .stFormSubmitButton > button:hover {
+    background-color: #006420;
+    color: #ffffff;
+}
+
+h2, h3 { color: #006420; }
+</style>
+"""
+st.markdown(_BRAND_CSS, unsafe_allow_html=True)
+
 
 @st.cache_resource
 def get_graph():
@@ -107,10 +166,21 @@ def _resolve_pending_item(item: hitl_queue.PendingEscalation, human_input: str):
 
 _init_session()
 
-st.title("🧭 Retail Ops Assistant (PoC)")
-st.caption(
-    "Multi-agent asystent operacyjny — klasyfikacja intencji, RAG nad runbookami, "
-    "walidacja, HITL. Zadaj pytanie jak pracownik sklepu."
+st.markdown(
+    """
+    <div class="zabka-inspired-banner">
+        <h1>🐸 Retail Ops Assistant (PoC)</h1>
+        <p>Multi-agent asystent operacyjny dla franczyzobiorców sieci convenience —
+        klasyfikacja intencji, RAG nad runbookami, walidacja, HITL, dwaj agenci per kategoria.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<span class="disclaimer-badge">⚠️ Niezależny projekt portfolio — inspirowany '
+    "wizualnie stroną Żabka.pl, niezwiązany z i nieautoryzowany przez Żabka Polska sp. z o.o. "
+    "Nie zawiera loga ani innych znaków zastrzeżonych.</span>",
+    unsafe_allow_html=True,
 )
 
 with st.expander("Katalog intencji obsługiwanych przez system"):
