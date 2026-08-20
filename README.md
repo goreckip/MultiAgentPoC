@@ -14,6 +14,7 @@ Pełny plan i harmonogram: patrz log decyzji w [`docs/decision_log.md`](docs/dec
 **Dokumentacja:**
 [case study (opis, architektura, walkthrough z realnym trace'em)](docs/case_study.md) ·
 [architektura i stan projektu](docs/architecture.md) ·
+[diagram grafu LangGraph](docs/graph_diagram.md) ·
 [diagram sekwencji docelowego procesu](docs/sequence_diagram.md) ·
 [lista wymagań ze statusem realizacji](docs/requirements.md)
 

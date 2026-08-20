@@ -35,8 +35,14 @@ Ten dokument to jego skondensowana, czytelna wersja.
 | 6 | Human-in-the-loop (współdzielona kolejka, `interrupt()`/`resume`) | ✅ |
 | 7 | Observability (Langfuse Cloud) | ✅ |
 
-Diagram sekwencji pełnego przepływu (renderuje się natywnie na GitHubie):
-[`docs/sequence_diagram.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/sequence_diagram.md)
+Dwa diagramy, oba renderują się natywnie na GitHubie:
+
+- **[`docs/graph_diagram.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/graph_diagram.md)**
+  — topologia grafu LangGraph, odwzorowana 1:1 z kodu
+  ([`pipeline_graph.py`](https://github.com/goreckip/MultiAgentPoC/blob/main/src/multiagent_poc/graph/pipeline_graph.py)):
+  węzły, rozgałęzienia warunkowe i dwa punkty pauzy na człowieka.
+- **[`docs/sequence_diagram.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/sequence_diagram.md)**
+  — diagram sekwencji całego procesu, łącznie z UI, kolejką HITL i Langfuse.
 
 Pełny opis modułów i plików: [`docs/architecture.md`](https://github.com/goreckip/MultiAgentPoC/blob/main/docs/architecture.md)
 

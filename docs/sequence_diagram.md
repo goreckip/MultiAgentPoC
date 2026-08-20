@@ -5,6 +5,10 @@ Pełny przepływ pytania użytkownika przez wszystkie 7 warstw architektury
 opisuje, jak proces ma działać po ukończeniu Sprintów 3-4, nie stan obecny
 (status implementacji per element — patrz [`requirements.md`](requirements.md)).
 
+> Odwzorowanie **faktycznej** topologii grafu wykonawczego (węzły i krawędzie
+> 1:1 z `pipeline_graph.py`) to osobny dokument:
+> [`graph_diagram.md`](graph_diagram.md).
+
 Renderuje się natywnie w GitHubie (blok ```mermaid).
 
 ```mermaid

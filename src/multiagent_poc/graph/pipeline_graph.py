@@ -1,8 +1,12 @@
-"""LangGraph wiring for the full flow in docs/sequence_diagram.md: validation
-+ classification + confidence gate (+ optional attachment) already live in
-classification/pipeline.py — this graph adds the branching or done in
-Weeks 1-4 and the human-in-the-loop escalation via interrupt()/resume,
-which needs an actual graph (a plain function can't pause and resume).
+"""LangGraph wiring for the full flow in docs/sequence_diagram.md.
+
+Validation, classification, the confidence gate and the optional attachment
+all live in classification/pipeline.py as plain functions. What this graph
+adds on top is the part a plain function can't do: branching between the
+auto-answer, escalation and rejection paths, and pausing mid-run for a human
+via interrupt()/resume.
+
+A rendered diagram of the node topology below lives in docs/graph_diagram.md.
 
 Thread-based resume: every conversation needs a stable `thread_id` in the
 invoke config so the checkpointer can find the paused state again when a

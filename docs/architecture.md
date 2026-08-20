@@ -2,7 +2,8 @@
 
 Ten dokument opisuje, co faktycznie istnieje w repo dzisiaj, jak się to spina, i
 odsyła do reszty dokumentacji. Pełne uzasadnienia decyzji — patrz
-[`decision_log.md`](decision_log.md). Diagram docelowego przepływu — patrz
+[`decision_log.md`](decision_log.md). Topologia grafu LangGraph (1:1 z kodu) —
+[`graph_diagram.md`](graph_diagram.md). Diagram docelowego przepływu — patrz
 [`sequence_diagram.md`](sequence_diagram.md). Checklisty wymagań — patrz
 [`requirements.md`](requirements.md).
 
