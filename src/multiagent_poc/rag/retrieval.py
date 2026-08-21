@@ -6,9 +6,9 @@ Generation itself lives in agents/subagent.py — see the note at the bottom.
 from dataclasses import dataclass
 
 import chromadb
-from langchain_ollama import OllamaEmbeddings
 
 from multiagent_poc.config import settings
+from multiagent_poc.llm import embedding_model
 
 ANSWER_SYSTEM_PROMPT = """Jesteś asystentem operacyjnym sieci sklepów convenience.
 Odpowiadaj WYŁĄCZNIE na podstawie dostarczonego kontekstu z runbooków.
@@ -42,7 +42,7 @@ def retrieve(
     k: int = 4,
 ) -> list[RetrievedChunk]:
     client = client or chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    embeddings = OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
+    embeddings = embedding_model()
     collection = client.get_collection(collection_name)
 
     result = collection.query(query_embeddings=[embeddings.embed_query(query)], n_results=k)

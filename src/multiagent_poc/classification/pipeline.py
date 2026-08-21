@@ -23,7 +23,11 @@ from multiagent_poc.classification.gate import GateDecision, decide
 from multiagent_poc.observability.langfuse_client import observe
 from multiagent_poc.validation.attachment import parse_pdf_text
 from multiagent_poc.validation.attachment_scan import scan_file
-from multiagent_poc.validation.input_validation import ValidationRejected, validate_input
+from multiagent_poc.validation.input_validation import (
+    ValidationRejected,
+    validate_attachment_text,
+    validate_input,
+)
 
 
 @dataclass
@@ -44,19 +48,29 @@ def handle_question(question: str, attachment_path: Path | None = None) -> Pipel
         raise ValidationRejected(validation.reason)
 
     attachment_text = None
+    flags = list(validation.flags)
     if attachment_path is not None:
         scan_file(attachment_path)  # raises AttachmentRejected — caller decides how to surface that
         # Parsed unconditionally once scanned: if the employee bothered to attach a
         # document, the agents downstream should be able to read it, not only the
         # classifier-tiebreak path below.
-        attachment_text = parse_pdf_text(attachment_path)
+        raw_text = parse_pdf_text(attachment_path)
+        # The AV scan proves the *file* is safe to open; it says nothing about what
+        # the text inside will do to a model that is about to read it. Content
+        # validation happens here, before the text can reach the classifier, the
+        # agents or Langfuse.
+        attachment_check = validate_attachment_text(raw_text)
+        if not attachment_check.allowed:
+            raise ValidationRejected(attachment_check.reason)
+        attachment_text = attachment_check.text
+        flags.extend(attachment_check.flags)
 
     decision = decide(classify(question))
     if not decision.should_escalate or attachment_text is None:
         return PipelineResult(
             decision=decision,
             used_attachment=False,
-            validation_flags=validation.flags,
+            validation_flags=flags,
             attachment_text=attachment_text,
         )
 
@@ -65,6 +79,6 @@ def handle_question(question: str, attachment_path: Path | None = None) -> Pipel
     return PipelineResult(
         decision=decision,
         used_attachment=True,
-        validation_flags=validation.flags,
+        validation_flags=flags,
         attachment_text=attachment_text,
     )

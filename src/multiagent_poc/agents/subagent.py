@@ -14,11 +14,11 @@ scoped two ways that generic RAG wasn't in Sprint 2:
 from dataclasses import dataclass
 
 import chromadb
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 
 from multiagent_poc.agents.abbreviations import strip_invented_expansions
 from multiagent_poc.config import settings
 from multiagent_poc.intents import INTENT_RUNBOOK_MAP, Intent
+from multiagent_poc.llm import chat_model, embedding_model
 from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
 from multiagent_poc.rag.index import COLLECTION_SECTION
 from multiagent_poc.rag.retrieval import ANSWER_SYSTEM_PROMPT, RetrievedChunk
@@ -42,15 +42,11 @@ class AgentAnswer:
     chunks: list[RetrievedChunk]
 
 
-def _embeddings() -> OllamaEmbeddings:
-    return OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
-
-
 def _retrieve_for_intent(question: str, intent: Intent, client: chromadb.ClientAPI, k: int = 4) -> list[RetrievedChunk]:
     runbook_filename = INTENT_RUNBOOK_MAP[intent]
     collection = client.get_collection(COLLECTION_SECTION)
     result = collection.query(
-        query_embeddings=[_embeddings().embed_query(question)],
+        query_embeddings=[embedding_model().embed_query(question)],
         n_results=k,
         where={"source": runbook_filename},
     )
@@ -86,7 +82,7 @@ def answer(
         )
     human_parts.append(f"Pytanie: {question}")
 
-    llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
+    llm = chat_model()
     response = llm.invoke(
         [("system", system_prompt), ("human", "\n\n".join(human_parts))],
         config={"callbacks": [get_callback_handler()]},

@@ -95,3 +95,59 @@ def validate_input(question: str) -> ValidationResult:
         )
 
     return ValidationResult(allowed=True, flags=_check_order_number_format(question))
+
+
+REDACTION = "[dane wrażliwe usunięte]"
+
+
+def redact_sensitive(text: str) -> tuple[str, list[str]]:
+    """Replaces validated PESEL numbers with a marker, returning the flags raised.
+
+    Used for attachment text rather than rejection, see validate_attachment_text.
+    """
+    flags: list[str] = []
+
+    def replace(match: re.Match) -> str:
+        if _is_valid_pesel_checksum(match.group(0)):
+            flags.append("attachment_pesel_redacted")
+            return REDACTION
+        return match.group(0)
+
+    return _PESEL_RE.sub(replace, text), flags
+
+
+@dataclass
+class AttachmentValidation:
+    allowed: bool
+    text: str
+    reason: str | None = None
+    flags: list[str] = field(default_factory=list)
+
+
+@observe(name="validate_attachment_text")
+def validate_attachment_text(text: str) -> AttachmentValidation:
+    """Content check for text extracted from an attachment.
+
+    The two risks are handled differently on purpose, because their causes are
+    different:
+
+    - **Prompt injection → reject.** A delivery note does not accidentally
+      contain "ignoruj poprzednie instrukcje". Text like that in a document the
+      model is about to read is indirect prompt injection, i.e. an attack on the
+      system, and the whole request is refused.
+    - **Sensitive personal data → redact, don't reject.** The employee did not
+      write the PDF; a supplier's document may legitimately carry someone's
+      PESEL. Rejecting would punish the employee for a third party's formatting
+      while a redaction already achieves the actual goal — the number never
+      reaches the classifier, the agents, or Langfuse. The rest of the document
+      (order number, supplier, dates) stays usable.
+    """
+    if _detect_prompt_injection(text):
+        return AttachmentValidation(
+            allowed=False,
+            text=text,
+            reason="załącznik zawiera treść wyglądającą na próbę prompt injection",
+        )
+
+    cleaned, flags = redact_sensitive(text)
+    return AttachmentValidation(allowed=True, text=cleaned, flags=flags)

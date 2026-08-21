@@ -10,9 +10,8 @@ in rag_eval_set.py, not a replacement for it. See decision_log.md.
 from dataclasses import dataclass
 import re
 
-from langchain_ollama import ChatOllama
 
-from multiagent_poc.config import settings
+from multiagent_poc.llm import chat_model
 from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
 
 JUDGE_PROMPT = """Jesteś surowym recenzentem odpowiedzi asystenta operacyjnego sieci sklepów convenience.
@@ -42,7 +41,7 @@ class JudgeResult:
 
 @observe(name="llm_judge")
 def judge_answer(question: str, context: str, answer: str) -> JudgeResult:
-    llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url, temperature=0)
+    llm = chat_model(temperature=0)
     prompt = JUDGE_PROMPT.format(question=question, context=context, answer=answer)
     response = llm.invoke([("human", prompt)], config={"callbacks": [get_callback_handler()]})
     raw = response.content

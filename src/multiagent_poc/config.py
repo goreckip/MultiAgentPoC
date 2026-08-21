@@ -16,6 +16,16 @@ class Settings:
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
     ollama_embed_model: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+    # Deterministic by default: answering a procedure and filling document fields
+    # are extraction tasks, not creative ones. Ollama's own default is ~0.8, which
+    # is where a chunk of the observed run-to-run variance came from.
+    ollama_temperature: float = float(os.getenv("OLLAMA_TEMPERATURE", "0"))
+    # Generous but finite. A generation on CPU has been measured at ~215s, so the
+    # ceiling is set well above that — the point is to fail eventually rather than
+    # hang a request (and a Streamlit spinner) forever on an unresponsive Ollama.
+    ollama_timeout_seconds: float = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "600"))
+    # Embeddings are ~3s in practice; no reason to wait minutes for one.
+    ollama_embed_timeout_seconds: float = float(os.getenv("OLLAMA_EMBED_TIMEOUT_SECONDS", "120"))
     chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", str(PROJECT_ROOT / "data/chroma"))
     confidence_threshold: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
     langfuse_public_key: str | None = os.getenv("LANGFUSE_PUBLIC_KEY")

@@ -762,6 +762,69 @@ etapie, surowy materiał pod przyszłe STAR.
   **Lekcja:** kiedy model „ignoruje" instrukcję, najpierw sprawdź, czy
   instrukcja mówi to, co ci się wydaje.
 
+## Sprint 11 — wnioski z review architektury (#2, #4, #1) — 2026-08-20
+
+Trzy z ustaleń przeglądu architektury, wdrożone w kolejności ryzyka.
+
+- **#2 + #4 — timeout i temperatura: jedna fabryka zamiast siedmiu miejsc**
+  (`src/multiagent_poc/llm.py`).
+  **Problem:** klienci Ollamy byli budowani w **siedmiu** miejscach, każdy
+  dziedziczył domyślne ustawienia: (a) **brak timeoutu** — niereagujący Ollama
+  wieszał request i spinner w Streamlicie w nieskończoność; (b) **temperatura
+  ~0.8** przy zadaniach, które są ekstrakcją, a nie twórczością (cytowanie
+  procedury, przepisanie numeru zamówienia do formularza). Część
+  obserwowanej wcześniej zmienności między przebiegami brała się właśnie stąd.
+  **Decyzja:** scentralizować konstrukcję klientów, zamiast łatać siedem
+  wywołań — bo przyczyną było rozproszenie, nie same wartości.
+  **Szczegół, który wymusił jedno miejsce:** `langchain-ollama` **nie ma
+  własnego pola `timeout`** — przekazuje `client_kwargs` do `ollama.Client`,
+  a ten dalej do httpx. Sprawdziłem to na zainstalowanej wersji zamiast
+  zgadywać nazwę parametru. Taka pośredniość powielona siedem razy to
+  gwarancja rozjazdu.
+  **Wartości:** temperatura 0 (deterministycznie), timeout generacji 600 s
+  (obserwowana generacja na CPU sięgała ~215 s, więc sufit jest wyraźnie
+  powyżej — chodzi o to, żeby *w końcu* zawieść, a nie wisieć), timeout
+  embeddingów 120 s (w praktyce ~3 s).
+  **Efekt:** `tests/test_llm_factory.py`, w tym **test architektoniczny**,
+  który przechodzi po `src/` i failuje, jeśli ktoś znów zbuduje klienta poza
+  `llm.py` — czyli dokładnie tak, jak ta niespójność powstała za pierwszym
+  razem.
+
+- **#1 — treść załącznika jako niezaufany input.**
+  **Problem:** skan ClamAV dowodzi, że *plik* jest bezpieczny do otwarcia, ale
+  nie mówi nic o tym, co *tekst* w środku zrobi modelowi, który zaraz go
+  przeczyta. Wyekstrahowany PDF trafiał do klasyfikatora i obu agentów bez
+  żadnej kontroli treści.
+  **Decyzja — dwa ryzyka, dwie różne odpowiedzi**, bo mają różne przyczyny:
+  - **Prompt injection w dokumencie → odrzucenie całego żądania.** List
+    przewozowy nie zawiera przypadkiem frazy „ignoruj poprzednie instrukcje".
+    Taki tekst to indirect prompt injection, czyli atak na system.
+  - **Dane wrażliwe (PESEL) → redakcja, nie odrzucenie.** Pracownik nie jest
+    autorem PDF-a od dostawcy; karanie go odmową za cudze formatowanie jest
+    złym UX, a redakcja realizuje właściwy cel — numer nie dociera do
+    klasyfikatora, agentów ani Langfuse — zostawiając resztę dokumentu
+    (numer zamówienia, dostawca, daty) użyteczną.
+
+- **#1 (druga część) — maskowanie w Langfuse. Znaleziona przy okazji realna
+  luka, nie „na wszelki wypadek".**
+  **Obserwacja:** warstwa walidacji odrzuca pytanie z PESEL-em, ale odrzucenie
+  następuje **wewnątrz** `handle_question`, które samo jest udekorowane
+  `@observe`. Dekorator zapisuje argumenty funkcji **w momencie wejścia**, więc
+  pytanie z PESEL-em było rejestrowane jako input spana, zanim walidacja w
+  ogóle się wykonała — i wysyłane do Langfuse Cloud przy nieudanym spanie.
+  Innymi słowy: „zablokowane" pytanie i tak opuszczało maszynę.
+  **Rozwiązanie:** jawna konstrukcja klienta `Langfuse(mask=...)` w
+  `observability/langfuse_client.py`, zamiast polegania na niejawnym singletonie
+  SDK. Maska działa na wszystkich spanach, wejściu i wyjściu, więc reszta kodu
+  nie musi o niej pamiętać.
+  **Zweryfikowane w chmurze, nie tylko testem jednostkowym:** wysłałem pytanie
+  z PESEL-em i unikalnym markerem, po czym **pobrałem trace z powrotem przez
+  API**. Trace istnieje (marker się zgadza — potwierdza, że span faktycznie
+  powstaje mimo odrzucenia), PESEL-u w nim nie ma, jest `[zamaskowane]`.
+  **Dodatkowy test:** `test_mask_pattern_matches_the_validation_layer` pilnuje,
+  żeby obie warstwy zgadzały się co do tego, jak wygląda PESEL — inaczej
+  zaostrzenie jednej strony po cichu otworzyłoby drugą.
+
 ## Szablon na kolejne sprinty
 
 ```

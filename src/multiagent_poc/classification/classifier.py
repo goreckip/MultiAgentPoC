@@ -12,11 +12,11 @@ from collections import Counter
 from dataclasses import dataclass
 
 import chromadb
-from langchain_ollama import OllamaEmbeddings
 
 from multiagent_poc.classification.exemplars import INTENT_EXEMPLARS
 from multiagent_poc.config import settings
 from multiagent_poc.intents import Intent
+from multiagent_poc.llm import embedding_model
 from multiagent_poc.observability.langfuse_client import observe
 
 COLLECTION_EXEMPLARS = "intent_exemplars"
@@ -29,13 +29,9 @@ class IntentClassification:
     vote_counts: dict[str, int]
 
 
-def _embeddings() -> OllamaEmbeddings:
-    return OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
-
-
 def build_exemplar_index(client: chromadb.ClientAPI | None = None) -> chromadb.ClientAPI:
     client = client or chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    embeddings = _embeddings()
+    embeddings = embedding_model()
     # hnsw:space=cosine: default (l2, on raw un-normalized vectors) barely
     # separated short exemplar phrases in practice — see decision_log.md.
     existing = {c.name for c in client.list_collections()}
@@ -61,7 +57,7 @@ def classify(
     k: int = 3,
 ) -> IntentClassification:
     client = client or chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    embeddings = _embeddings()
+    embeddings = embedding_model()
     collection = client.get_collection(COLLECTION_EXEMPLARS)
 
     result = collection.query(query_embeddings=[embeddings.embed_query(question)], n_results=k)

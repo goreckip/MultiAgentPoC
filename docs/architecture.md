@@ -48,6 +48,8 @@ patrz główny [`README.md`](../README.md).
 | Eksperyment porównawczy (klasyfikator) | [`scripts/evaluate_classifier.py`](../scripts/evaluate_classifier.py) | Uruchamia klasyfikator + gate na całym zbiorze ewaluacyjnym, raportuje trafność i każdą pomyłkę. |
 | Skan antywirusowy załącznika | [`src/multiagent_poc/validation/attachment_scan.py`](../src/multiagent_poc/validation/attachment_scan.py) | Wywołuje lokalny `clamscan.exe` (ClamAV), blokujące i bezwarunkowe przed jakimkolwiek parsowaniem. |
 | Parser PDF | [`src/multiagent_poc/validation/attachment.py`](../src/multiagent_poc/validation/attachment.py) | Ekstrakcja tekstu (pypdf), tylko warstwa tekstowa, bez OCR. |
+| Walidacja treści załącznika | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) (`validate_attachment_text`) | Skan AV dowodzi, że plik jest bezpieczny do otwarcia — to sprawdza, co robi jego *treść*. Prompt injection w dokumencie → odrzucenie żądania; dane wrażliwe (PESEL) → redakcja, nie odrzucenie (patrz `decision_log.md`, Sprint 11). |
+| Fabryka klientów Ollamy | [`src/multiagent_poc/llm.py`](../src/multiagent_poc/llm.py) | Jedyne miejsce, gdzie powstają `ChatOllama`/`OllamaEmbeddings` — ustala timeout requestu i temperaturę 0. Wcześniej siedem miejsc dziedziczyło domyślne (brak timeoutu, temperatura ~0.8). Pilnowane testem architektonicznym. |
 | Pipeline klasyfikacja+załącznik | [`src/multiagent_poc/classification/pipeline.py`](../src/multiagent_poc/classification/pipeline.py) | Spina klasyfikator + gate + opcjonalny załącznik. Treść PDF (po skanie AV) jest parsowana zawsze i niesiona w `PipelineResult.attachment_text` do obu agentów; dodatkowo służy do reklasyfikacji, gdy pytanie samo w sobie miało zbyt niską pewność. |
 | Demo end-to-end (na żywo) | [`scripts/demo_attachment_pipeline.py`](../scripts/demo_attachment_pipeline.py) | Pokazuje realny przypadek, gdzie załącznik podnosi pewność klasyfikacji powyżej progu. |
 | Walidacja danych wejściowych | [`src/multiagent_poc/validation/input_validation.py`](../src/multiagent_poc/validation/input_validation.py) | PESEL (regex + suma kontrolna), prompt injection, prośby o dane osób trzecich → twardy odrzut; zły format numeru zamówienia → flaga, nie blokada. |
@@ -65,7 +67,7 @@ patrz główny [`README.md`](../README.md).
 | Drugi agent — drafting agent | [`src/multiagent_poc/agents/drafting_agent.py`](../src/multiagent_poc/agents/drafting_agent.py) | Generuje gotowe dokumenty (zgłoszenia, karty zdarzeń, pisma) dla 7/8 kategorii, reużywając chunków z `subagent.answer()`. Brakujące dane → jawny placeholder `[uzupełnij: ...]`, nie zgadywanie. Kategorie wrażliwe (BHP, HR) mają `requires_human_review=True`. |
 | Węzeł zatwierdzania dokumentu w grafie | [`src/multiagent_poc/graph/pipeline_graph.py`](../src/multiagent_poc/graph/pipeline_graph.py) (`document_review_node`) | Dla dokumentów wrażliwych — pauzuje graf przez `interrupt()` (payload `kind="document_review"`), wznawia z zatwierdzoną/edytowaną treścią, procedural `answer` przeżywa pauzę obok `draft_text`. |
 
-**Zweryfikowane działanie:** `pytest` (62 szybkie testy + 4 wolne end-to-end
+**Zweryfikowane działanie:** `pytest` (79 szybkich testów + 4 wolne end-to-end
 uruchamiane przez `pytest -m slow`, w tym testy wymagające
 Ollamy), pełny graf na żywo (auto-odpowiedź z Ollama, odrzucenie walidacji,
 pauza/wznowienie HITL) — patrz wpisy "Sprint 3"-"Sprint 7" w `decision_log.md`,

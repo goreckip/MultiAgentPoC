@@ -317,7 +317,7 @@ obnażyło lukę. Pełny opis: [`docs/decision_log.md`, Sprint 6](https://github
 
 ### Testy automatyczne
 
-**62 szybkie testy** (mockowany LLM, ~2,5 min) + **4 wolne end-to-end**
+**79 szybkich testów** (mockowany LLM, ~2,5 min) + **4 wolne end-to-end**
 (`pytest -m slow`, realna Ollama, ~4 min), w tym:
 
 - **własność dla pytań dwuznacznych** — dla pytań z dwiema dopuszczalnymi

@@ -14,11 +14,10 @@ correspondence one. `inne` never reaches this agent at all.
 
 from dataclasses import dataclass
 
-from langchain_ollama import ChatOllama
 
 from multiagent_poc.agents.abbreviations import strip_invented_expansions
-from multiagent_poc.config import settings
 from multiagent_poc.intents import Intent
+from multiagent_poc.llm import chat_model
 from multiagent_poc.observability.langfuse_client import get_callback_handler, observe
 from multiagent_poc.rag.retrieval import RetrievedChunk
 
@@ -128,7 +127,7 @@ def draft_document(
         )
     human_parts.append(f"Pytanie pracownika: {question}")
 
-    llm = ChatOllama(model=settings.ollama_model, base_url=settings.ollama_base_url)
+    llm = chat_model()
     response = llm.invoke(
         [("system", system_prompt), ("human", "\n\n".join(human_parts))],
         config={"callbacks": [get_callback_handler()]},
